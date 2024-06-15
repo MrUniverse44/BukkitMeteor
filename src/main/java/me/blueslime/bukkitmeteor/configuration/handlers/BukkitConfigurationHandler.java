@@ -76,14 +76,13 @@ public class BukkitConfigurationHandler extends ConfigurationHandler {
         if (getType() == ConfigurationType.YAML) {
             return PluginConsumer.ofUnchecked(
                     () -> new BukkitConfiguration(YamlConfiguration.loadConfiguration(file)),
-                    ignored -> {
-                    },
+                    Throwable::printStackTrace,
                     BukkitConfiguration::new
             );
         }
         return PluginConsumer.ofUnchecked(
                 () -> new CustomConfigurationHandler(JsonConfiguration.load(file)),
-                ignored -> {},
+                Throwable::printStackTrace,
                 () -> new CustomConfigurationHandler(getType())
         );
     }
