@@ -108,34 +108,7 @@ public class WorldLocation {
         configuration.set(path + "pitch", String.valueOf(pitch));
     }
 
-    public void print(me.blueslime.bukkitmeteor.configuration.ConfigurationSection configuration, String path) {
-        path = !path.isEmpty() ? path.endsWith(".") ? path : path + "." : "";
-
-        path = path + "location-" + hashCode() + ".";
-
-        configuration.set(path + "world", world);
-        configuration.set(path + "x", x);
-        configuration.set(path + "y", y);
-        configuration.set(path + "z", z);
-        configuration.set(path + "yaw", String.valueOf(yaw));
-        configuration.set(path + "pitch", String.valueOf(pitch));
-    }
-
     public static WorldLocation fromConfiguration(ConfigurationSection section) {
-        if (section == null) {
-            return null;
-        }
-        return new WorldLocation(
-                section.getString("world", null),
-                section.getInt("x", 0),
-                section.getInt("y", 0),
-                section.getInt("z", 0),
-                Float.parseFloat(section.getString("yaw", "0")),
-                Float.parseFloat(section.getString("pitch", "0"))
-        );
-    }
-
-    public static WorldLocation fromConfiguration(me.blueslime.bukkitmeteor.configuration.ConfigurationSection section) {
         if (section == null) {
             return null;
         }
@@ -165,22 +138,6 @@ public class WorldLocation {
         );
     }
 
-    public static WorldLocation fromConfiguration(me.blueslime.bukkitmeteor.configuration.ConfigurationSection section, String path) {
-        if (section == null) {
-            return null;
-        }
-        path = path != null && !path.isEmpty() ? path.endsWith(".") ? path : path + "." : "";
-
-        return new WorldLocation(
-                section.getString(path +"world", null),
-                section.getInt(path + "x", 0),
-                section.getInt(path + "y", 0),
-                section.getInt(path + "z", 0),
-                Float.parseFloat(section.getString(path + "yaw", "0")),
-                Float.parseFloat(section.getString(path + "pitch", "0"))
-        );
-    }
-
     public static List<WorldLocation> getLocations(ConfigurationSection section) {
         if (section == null) {
             return new ArrayList<>();
@@ -189,24 +146,6 @@ public class WorldLocation {
 
         for (String id : section.getKeys(false)) {
             WorldLocation worldLocation = fromConfiguration(section.getConfigurationSection(id));
-            if (worldLocation != null) {
-                worldLocationList.add(
-                        worldLocation
-                );
-            }
-        }
-
-        return worldLocationList;
-    }
-
-    public static List<WorldLocation> getLocations(me.blueslime.bukkitmeteor.configuration.ConfigurationSection section) {
-        if (section == null) {
-            return new ArrayList<>();
-        }
-        List<WorldLocation> worldLocationList = new ArrayList<>();
-
-        for (String id : section.getKeySet(false)) {
-            WorldLocation worldLocation = fromConfiguration(section.getSection(id));
             if (worldLocation != null) {
                 worldLocationList.add(
                         worldLocation

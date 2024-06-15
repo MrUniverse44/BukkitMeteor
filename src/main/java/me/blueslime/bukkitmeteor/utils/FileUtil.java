@@ -12,6 +12,9 @@ public class FileUtil {
     }
 
     public static InputStream build(String location) {
+        if (location == null) {
+            return null;
+        }
         if (!location.startsWith("/")) {
             return FileUtil.class.getResourceAsStream("/" + location);
         }

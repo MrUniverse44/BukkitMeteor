@@ -132,7 +132,7 @@
       <dependency>
           <groupId>com.github.ShieldCommunity</groupId>
           <artifactId>SternalBoard</artifactId>
-          <version>9227f978b8</version>
+          <version>e013905b8b</version>
           <scope>compile</scope>
       </dependency>
       <dependency>

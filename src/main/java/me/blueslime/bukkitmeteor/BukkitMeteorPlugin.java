@@ -2,12 +2,6 @@ package me.blueslime.bukkitmeteor;
 
 import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
-import me.blueslime.bukkitmeteor.configuration.ConfigurationFile;
-import me.blueslime.bukkitmeteor.configuration.ConfigurationHandler;
-import me.blueslime.bukkitmeteor.configuration.ConfigurationProvider;
-import me.blueslime.bukkitmeteor.configuration.ConfigurationType;
-import me.blueslime.bukkitmeteor.configuration.custom.JsonConfiguration;
-import me.blueslime.bukkitmeteor.configuration.handlers.BukkitConfigurationHandler;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
@@ -18,8 +12,10 @@ import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.bukkitmeteor.scoreboards.Scoreboards;
 import me.blueslime.bukkitmeteor.utils.FileUtil;
+import me.blueslime.bukkitmeteor.utils.PluginConsumer;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -28,7 +24,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
-public abstract class BukkitMeteorPlugin extends JavaPlugin implements ConfigurationProvider, MeteorLogger {
+@SuppressWarnings("unused")
+public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLogger {
     private final Map<LoggerType, String> logMap = new EnumMap<>(LoggerType.class);
     private final Map<Class<?>, Module> moduleMap = new HashMap<>();
 
@@ -108,26 +105,40 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
         }
     }
 
-    @Override
-    public ConfigurationHandler load(ConfigurationType type, ConfigurationFile file) {
-        return new BukkitConfigurationHandler(type, file);
+    public FileConfiguration load(String fileName, String resource) {
+        return load(new File(getDataFolder(), fileName), resource);
     }
 
-    @Override
-    public void save(ConfigurationHandler config, ConfigurationFile file) throws Exception {
-        if (config == null || file == null) {
+    public FileConfiguration load(File fetchFile, String resource) {
+        if (resource == null) {
+            FileUtil.saveResource(fetchFile, null);
+            return YamlConfiguration.loadConfiguration(fetchFile);
+        }
+
+        InputStream src = FileUtil.build(resource);
+        src = src == null ? getResource(resource) : src;
+
+        FileUtil.saveResource(fetchFile, src);
+
+        return YamlConfiguration.loadConfiguration(
+            fetchFile
+        );
+    }
+
+    public void save(FileConfiguration configuration, File file, String resource) {
+        if (configuration == null || file == null) {
             return;
         }
 
-        FileUtil.saveResource(file.getFile(), file.getResource());
+        InputStream src = FileUtil.build(resource);
+        src = src == null ? getResource(resource) : src;
 
-        if (config.getType() == ConfigurationType.YAML) {
-            FileConfiguration configuration = config.toSpecifiedConfiguration();
+        FileUtil.saveResource(file, src);
 
-            configuration.save(file.getFile());
-        } else {
-            JsonConfiguration.save(config.toSpecifiedConfiguration(), file.getFile());
-        }
+        PluginConsumer.process(
+            () -> configuration.save(file),
+            Throwable::printStackTrace
+        );
     }
 
     @Override
@@ -158,15 +169,8 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
     }
 
     @Register(identifier = "settings.yml")
-    public ConfigurationHandler provideSettings() {
-        InputStream src = FileUtil.build("settings.yml");
-        return getConfigurations().load(
-            ConfigurationType.YAML,
-            ConfigurationFile.build(
-                new File(getDataFolder(), "settings.yml"),
-                src != null ? src : getResource("settings.yml")
-            )
-        );
+    public FileConfiguration provideSettings() {
+        return load(new File(getDataFolder(), "settings.yml"), "settings.yml");
     }
 
     @Register
@@ -177,11 +181,6 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
     @Register
     public CustomInventoryProvider provideInventories() {
         return new CustomInventoryProvider(this);
-    }
-
-    @Register
-    public ConfigurationProvider getConfigurations() {
-        return this;
     }
 
     @Register
