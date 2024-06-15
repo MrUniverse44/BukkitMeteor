@@ -60,69 +60,74 @@ public class Implements {
     public void registerClass(Object instancedClass) {
         Class<?> clazz = instancedClass.getClass();
 
-        Field[] fields = clazz.getDeclaredFields();
+        while (clazz != null) {
 
-        Module module = instancedClass instanceof Module ?
-                (Module)instancedClass : null;
+            Field[] fields = clazz.getDeclaredFields();
 
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(Register.class)) {
-                field.setAccessible(true);
-                Register data = field.getAnnotation(Register.class);
-                PluginConsumer.process(
-                    () -> {
-                        Object value = field.get(instancedClass);
-                        if (value != null) {
-                            if (data.identifier().isEmpty()) {
-                                CLASS_MAP.put(
-                                    RegistrationData.fromData(
-                                        module,
-                                        field.getType()
-                                    ),
-                                    value
-                                );
-                            } else {
-                                CLASS_MAP.put(
-                                    RegistrationData.fromData(
-                                        module,
-                                        field.getType(),
-                                        data.identifier()
-                                    ),
-                                    value
-                                );
+            Module module = instancedClass instanceof Module ?
+                    (Module) instancedClass : null;
+
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Register.class)) {
+                    field.setAccessible(true);
+                    Register data = field.getAnnotation(Register.class);
+                    PluginConsumer.process(
+                            () -> {
+                                Object value = field.get(instancedClass);
+                                if (value != null) {
+                                    if (data.identifier().isEmpty()) {
+                                        CLASS_MAP.put(
+                                                RegistrationData.fromData(
+                                                        module,
+                                                        field.getType()
+                                                ),
+                                                value
+                                        );
+                                    } else {
+                                        CLASS_MAP.put(
+                                                RegistrationData.fromData(
+                                                        module,
+                                                        field.getType(),
+                                                        data.identifier()
+                                                ),
+                                                value
+                                        );
+                                    }
+                                }
                             }
-                        }
-                    }
-                );
-            }
-        }
-
-        Method[] methods = clazz.getDeclaredMethods();
-        for (Method method : methods) {
-            if (method.isAnnotationPresent(Register.class)) {
-                if (method.getReturnType().equals(Void.TYPE)) {
-                    continue;
+                    );
                 }
-                method.setAccessible(true);
-                Register data = method.getAnnotation(Register.class);
-                PluginConsumer.process(
-                    () -> {
-                        Object value = method.invoke(instancedClass);
-                        if (value != null) {
-                            if (data.identifier().isEmpty()) {
-                                CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType()), value);
-                            } else {
-                                CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType(), data.identifier()), value);
-                            }
-                        } else {
-                            throw new IllegalMethodRegistration("Can't register a null value result from: " + method.getName() + " of " + method.getReturnType().getSimpleName());
-                        }
-                    },
-                    ex -> {
-                        throw new RuntimeException(new IllegalMethodRegistration(ex));
-                    }
-                );
             }
+
+            Method[] methods = clazz.getDeclaredMethods();
+            for (Method method : methods) {
+                if (method.isAnnotationPresent(Register.class)) {
+                    if (method.getReturnType().equals(Void.TYPE)) {
+                        continue;
+                    }
+                    method.setAccessible(true);
+                    Register data = method.getAnnotation(Register.class);
+                    PluginConsumer.process(
+                            () -> {
+                                Object value = method.invoke(instancedClass);
+                                if (value != null) {
+                                    if (data.identifier().isEmpty()) {
+                                        CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType()), value);
+                                    } else {
+                                        CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType(), data.identifier()), value);
+                                    }
+                                } else {
+                                    throw new IllegalMethodRegistration("Can't register a null value result from: " + method.getName() + " of " + method.getReturnType().getSimpleName());
+                                }
+                            },
+                            ex -> {
+                                throw new RuntimeException(new IllegalMethodRegistration(ex));
+                            }
+                    );
+                }
+            }
+
+            clazz = clazz.getSuperclass();
         }
     }
 

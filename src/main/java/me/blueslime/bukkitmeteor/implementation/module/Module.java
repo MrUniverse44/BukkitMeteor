@@ -17,7 +17,11 @@ public interface Module {
     }
 
     default void register() {
-        Implements.register(this, this);
+        Implements.register(this);
+    }
+
+    default void register(Object thisInstance) {
+        Implements.register(thisInstance);
     }
 
     default void unregister() {

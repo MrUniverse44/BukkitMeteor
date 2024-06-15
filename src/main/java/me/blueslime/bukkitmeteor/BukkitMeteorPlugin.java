@@ -34,11 +34,9 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
 
     public abstract void onEnable();
 
-    public void register() {
-        Implements.register(this);
-    }
+    protected void initialize(Object instance) {
+        Implements.register(instance);
 
-    protected void initialize() {
         new Actions(this);
         new Scoreboards(this);
 
@@ -53,7 +51,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
         registerModule(
             Implements.fetch(Menus.class),
             Implements.fetch(CustomInventoryProvider.class)
-        );
+        ).finishOwn();
     }
 
     @Override
@@ -76,6 +74,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
 
     public void finish() {
         getLogger().info("Registered " + moduleMap.size() + " module(s).");
+    }
+
+    private void finishOwn() {
+        getLogger().info("Registered " + moduleMap.size() + " origin module(s).");
     }
 
     private void loadOwnModules() {
