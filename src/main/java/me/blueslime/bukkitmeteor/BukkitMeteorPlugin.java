@@ -35,12 +35,22 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
     public abstract void onEnable();
 
     protected void initialize() {
+        Implements.register(this);
+
         new Actions(this);
         new Scoreboards(this);
 
+        registerOwnModules();
         registerModules();
 
         loadModules();
+    }
+
+    private void registerOwnModules() {
+        registerModule(
+            Implements.fetch(Menus.class),
+            Implements.fetch(CustomInventoryProvider.class)
+        );
     }
 
     @Override
@@ -145,16 +155,12 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
 
     @Register
     public Menus provideMenus() {
-        Menus menus = new Menus(this);
-        menus.initialize();
-        return menus;
+        return new Menus(this);
     }
 
     @Register
     public CustomInventoryProvider provideInventories() {
-        CustomInventoryProvider inventories = new CustomInventoryProvider(this);
-        inventories.initialize();
-        return inventories;
+        return new CustomInventoryProvider(this);
     }
 
     @Register
@@ -179,6 +185,11 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
                 prefix,
                 (k) -> prefix.getDefaultPrefix()
         );
+    }
+
+    @Register
+    public BukkitMeteorPlugin provideBukkitMeteorPlugin() {
+        return this;
     }
 
     public boolean isPluginEnabled(String pluginName) {
