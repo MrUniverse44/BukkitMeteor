@@ -112,7 +112,7 @@
           <groupId>com.github.BlueSlimeDev</groupId>
           <artifactId>UtilitiesAPI</artifactId>
           <version>1.0.3</version>
-          <scope>provided</scope>
+          <scope>compile</scope>
       </dependency>
       <dependency>
           <groupId>com.github.BlueSlimeDev</groupId>
