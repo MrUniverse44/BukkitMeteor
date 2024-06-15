@@ -34,9 +34,11 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
 
     public abstract void onEnable();
 
-    protected void initialize(Object instance) {
-        Implements.register(instance);
+    public void register() {
+        Implements.register(this);
+    }
 
+    protected void initialize() {
         new Actions(this);
         new Scoreboards(this);
 
@@ -63,6 +65,9 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements Configura
     public BukkitMeteorPlugin registerModule(Module... modules) {
         if (modules != null && modules.length >= 1) {
             for (Module module : modules) {
+                if (module == null) {
+                    continue;
+                }
                 moduleMap.put(module.getClass(), module);
             }
         }
