@@ -89,9 +89,9 @@ public class Implements {
                     () -> {
                         Object value = field.get(instancedClass);
                         if (data.identifier().isEmpty()) {
-                            CLASS_MAP.put(RegistrationData.fromData(module, field.getClass()), value);
+                            CLASS_MAP.put(RegistrationData.fromData(module, field.getType()), value);
                         } else {
-                            CLASS_MAP.put(RegistrationData.fromData(module, field.getClass(), data.identifier()), value);
+                            CLASS_MAP.put(RegistrationData.fromData(module, field.getType(), data.identifier()), value);
                         }
                     }
                 );
@@ -101,15 +101,18 @@ public class Implements {
         Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
             if (method.isAnnotationPresent(Register.class)) {
+                if (method.getReturnType().equals(Void.TYPE)) {
+                    continue;
+                }
                 method.setAccessible(true);
                 Register data = method.getAnnotation(Register.class);
                 PluginConsumer.process(
                         () -> {
                             Object value = method.invoke(instancedClass);
                             if (data.identifier().isEmpty()) {
-                                CLASS_MAP.put(RegistrationData.fromData(module, method.getClass()), value);
+                                CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType()), value);
                             } else {
-                                CLASS_MAP.put(RegistrationData.fromData(module, method.getClass(), data.identifier()), value);
+                                CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType(), data.identifier()), value);
                             }
                         },
                         ex -> {
