@@ -52,13 +52,15 @@ public class Menus implements Module {
         for (File file : files) {
             FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
-            plugin.getLogs().info("Registered menu with id: " + file.getName());
+
+            String identifier = file.getName().toLowerCase(Locale.ENGLISH).replace(
+                ".yml",
+                ""
+            );
+            plugin.getLogs().info("Registered menu with id: " + identifier);
 
             menuStorage.add(
-                file.getName().toLowerCase(Locale.ENGLISH).replace(
-                    ".yml",
-                    ""
-                ),
+                identifier,
                 (k) -> new DefaultMenu(
                     plugin,
                     configuration,
@@ -80,10 +82,11 @@ public class Menus implements Module {
      */
     public Menu getSpecifiedMenu(String key) {
         if (key == null) {
+            plugin.getLogs().error("Invalid null menu key");
             return null;
         }
         return menuStorage.get(
-                key.toLowerCase()
+            key.toLowerCase(Locale.ENGLISH)
         );
     }
 

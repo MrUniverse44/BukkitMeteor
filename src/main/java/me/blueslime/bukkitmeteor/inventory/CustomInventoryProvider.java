@@ -52,13 +52,14 @@ public class CustomInventoryProvider implements Module {
         for (File file : files) {
             FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
-            plugin.getLogs().info("Registered inventory with id: " + file.getName());
+            String identifier = file.getName().toLowerCase(Locale.ENGLISH).replace(
+                ".yml",
+                ""
+            );
+            plugin.getLogs().info("Registered inventory with id: " + identifier);
 
             menuStorage.add(
-                file.getName().toLowerCase(Locale.ENGLISH).replace(
-                    ".yml",
-                    ""
-                ),
+                identifier,
                 (k) -> new DefaultInventory(
                     plugin,
                     configuration,
@@ -80,10 +81,11 @@ public class CustomInventoryProvider implements Module {
      */
     public MeteorInventory getSpecifiedInventory(String key) {
         if (key == null) {
+            plugin.getLogs().error("Invalid inventory null key");
             return null;
         }
         return menuStorage.get(
-            key.toLowerCase()
+            key.toLowerCase(Locale.ENGLISH)
         );
     }
 
