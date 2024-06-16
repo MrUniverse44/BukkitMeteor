@@ -38,6 +38,11 @@ public class Menus implements Module {
             plugin.getLogs().info("Created menus folder.");
         }
 
+        folder = new File(
+            plugin.getDataFolder(),
+            "menus"
+        );
+
         File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
 
         if (files == null) {

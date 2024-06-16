@@ -38,6 +38,11 @@ public class CustomInventoryProvider implements Module {
             plugin.getLogs().info("Created inventories folder.");
         }
 
+        folder = new File(
+            plugin.getDataFolder(),
+            "inventories"
+        );
+
         File[] files = folder.listFiles((dir, name) -> name.endsWith(".yml"));
 
         if (files == null) {
