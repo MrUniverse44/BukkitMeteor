@@ -139,6 +139,22 @@ public class Implements {
         return fetchClass(RegistrationData.fromData(clazz, identifier));
     }
 
+    public <T> T update(Class<T> clazz, T newValue) {
+        return update(RegistrationData.fromData(clazz), newValue);
+    }
+
+    public <T> T update(Class<T> clazz, String identifier, T newValue) {
+        return update(RegistrationData.fromData(clazz, identifier), newValue);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T update(RegistrationData data, T newValue) {
+        return (T) CLASS_MAP.put(
+            data,
+            newValue
+        );
+    }
+
     @SuppressWarnings("unchecked")
     public <T> T fetchClass(RegistrationData data) {
         Object result = CLASS_MAP.get(data);
