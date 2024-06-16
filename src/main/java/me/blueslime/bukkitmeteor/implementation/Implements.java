@@ -37,6 +37,14 @@ public class Implements {
         return inst().fetchClass(clazz, identifier);
     }
 
+    public static <T> T setEntry(Class<T> clazz, T newValue) {
+        return inst().update(clazz, newValue);
+    }
+
+    public static <T> T setEntry(Class<T> clazz, String identifier, T newValue) {
+        return inst().update(clazz, identifier, newValue);
+    }
+
     public void unregisterAll(RegistrationData... all) {
         for (RegistrationData datum : all) {
             CLASS_MAP.remove(datum);
