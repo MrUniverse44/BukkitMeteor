@@ -96,7 +96,7 @@ public class DefaultMenu extends Menu {
                     for (int currentSlot : configuration.getIntegerList(path + ".slots")) {
                         inventory.addItem(
                                 WrapperMenuItem.builder(
-                                        item,
+                                        item + currentSlot,
                                         currentSlot
                                 ).item(
                                         wrapper
