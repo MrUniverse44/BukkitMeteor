@@ -29,6 +29,8 @@ public class InventoryAction extends Action {
         MeteorInventory inventory = menus.getSpecifiedInventory(parameter.toLowerCase(Locale.ENGLISH));
         if (inventory != null) {
             players.forEach(inventory::setInventory);
+        } else {
+            plugin.getLogs().error("Can't find inventory with id: " + parameter.toLowerCase(Locale.ENGLISH));
         }
     }
 }

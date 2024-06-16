@@ -27,7 +27,10 @@ public class MenuAction extends Action {
         Menus menus = Implements.fetch(Menus.class);
         Menu menu = menus.getSpecifiedMenu(parameter.toLowerCase(Locale.ENGLISH));
         if (menu != null) {
+            plugin.getLogs().info("Opening menu: " + parameter + ".");
             players.forEach(menu::openMenu);
+        } else {
+            plugin.getLogs().error("Can't find menu with id: " + parameter.toLowerCase(Locale.ENGLISH));
         }
     }
 }
