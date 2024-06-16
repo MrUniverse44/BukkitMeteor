@@ -24,13 +24,14 @@ public class MenuAction extends Action {
      */
     @Override
     public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+        String id = replace(parameter.toLowerCase(Locale.ENGLISH));
         Menus menus = Implements.fetch(Menus.class);
-        Menu menu = menus.getSpecifiedMenu(parameter.toLowerCase(Locale.ENGLISH));
+        Menu menu = menus.getSpecifiedMenu(id);
         if (menu != null) {
             plugin.getLogs().info("Opening menu: " + parameter + ".");
             players.forEach(menu::openMenu);
         } else {
-            plugin.getLogs().error("Can't find menu with id: " + parameter.toLowerCase(Locale.ENGLISH));
+            plugin.getLogs().error("Can't find menu with id: " + id);
         }
     }
 }

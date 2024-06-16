@@ -23,7 +23,7 @@ public class PlaySoundAction extends Action {
     @Override
     public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
         try {
-            String[] arguments = parameter.replace(" ", "").split(",");
+            String[] arguments = replace(parameter.replace(" ", "")).split(",");
 
             if (arguments.length == 1) {
                 Sound sound = Sound.valueOf(parameter.toUpperCase(Locale.ENGLISH));

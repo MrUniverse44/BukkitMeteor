@@ -25,12 +25,13 @@ public class InventoryAction extends Action {
      */
     @Override
     public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+        String id = replace(parameter.toLowerCase(Locale.ENGLISH));
         CustomInventoryProvider menus = Implements.fetch(CustomInventoryProvider.class);
-        MeteorInventory inventory = menus.getSpecifiedInventory(parameter.toLowerCase(Locale.ENGLISH));
+        MeteorInventory inventory = menus.getSpecifiedInventory(id);
         if (inventory != null) {
             players.forEach(inventory::setInventory);
         } else {
-            plugin.getLogs().error("Can't find inventory with id: " + parameter.toLowerCase(Locale.ENGLISH));
+            plugin.getLogs().error("Can't find inventory with id: " + id);
         }
     }
 }
