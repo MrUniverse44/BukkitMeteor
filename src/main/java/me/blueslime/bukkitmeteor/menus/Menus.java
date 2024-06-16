@@ -47,23 +47,19 @@ public class Menus implements Module {
         for (File file : files) {
             FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
-            int type = Integer.parseInt(
-                    String.valueOf(configuration.get("settings.menu-type", 0))
-            );
+            plugin.getLogs().info("Registered menu with id: " + file.getName());
 
-            if (type <= 1) {
-                menuStorage.add(
-                    file.getName().toLowerCase(Locale.ENGLISH).replace(
-                        ".yml",
-                        ""
-                    ),
-                    (k) -> new DefaultMenu(
-                        plugin,
-                        configuration,
-                        file
-                    )
-                );
-            }
+            menuStorage.add(
+                file.getName().toLowerCase(Locale.ENGLISH).replace(
+                    ".yml",
+                    ""
+                ),
+                (k) -> new DefaultMenu(
+                    plugin,
+                    configuration,
+                    file
+                )
+            );
         }
     }
 
@@ -84,5 +80,9 @@ public class Menus implements Module {
         return menuStorage.get(
                 key.toLowerCase()
         );
+    }
+
+    public PluginStorage<String, Menu> getMenuStorage() {
+        return menuStorage;
     }
 }

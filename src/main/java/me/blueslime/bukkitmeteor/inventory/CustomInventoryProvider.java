@@ -47,23 +47,19 @@ public class CustomInventoryProvider implements Module {
         for (File file : files) {
             FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
-            int type = Integer.parseInt(
-                    String.valueOf(configuration.get("settings.menu-type", 0))
-            );
+            plugin.getLogs().info("Registered inventory with id: " + file.getName());
 
-            if (type <= 1) {
-                menuStorage.add(
-                        file.getName().toLowerCase(Locale.ENGLISH).replace(
-                                ".yml",
-                                ""
-                        ),
-                        (k) -> new DefaultInventory(
-                                plugin,
-                                configuration,
-                                file
-                        )
-                );
-            }
+            menuStorage.add(
+                file.getName().toLowerCase(Locale.ENGLISH).replace(
+                    ".yml",
+                    ""
+                ),
+                (k) -> new DefaultInventory(
+                    plugin,
+                    configuration,
+                    file
+                )
+            );
         }
     }
 
@@ -84,6 +80,10 @@ public class CustomInventoryProvider implements Module {
         return menuStorage.get(
             key.toLowerCase()
         );
+    }
+
+    public PluginStorage<String, MeteorInventory> getInventoryStorage() {
+        return menuStorage;
     }
 }
 
