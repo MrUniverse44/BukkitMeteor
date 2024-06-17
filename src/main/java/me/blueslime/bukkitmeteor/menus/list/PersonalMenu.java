@@ -3,6 +3,7 @@ package me.blueslime.bukkitmeteor.menus.list;
 import fr.mrmicky.fastinv.FastInv;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.Actions;
+import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.utils.PluginUtil;
 import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
 import me.blueslime.utilitiesapi.item.ItemWrapper;
@@ -27,7 +28,7 @@ public class PersonalMenu extends FastInv {
         super(
             PluginUtil.getRows(configuration.getInt("menu-settings.rows", 54)),
             TextUtilities.colorize(
-                configuration.getString("menu-settings.name", "&e&lRANKS &7Page %page%")
+                configuration.getString("menu-settings.name", "menu-settings.name not found")
                     .replace("%page%", String.valueOf(1))
                     .replace("<page>", String.valueOf(1))
             )
@@ -45,7 +46,7 @@ public class PersonalMenu extends FastInv {
             .replace("<player_name>", player.getName())
             .replace("<heart>", "❤");
 
-        Actions actions = plugin.getModule(Actions.class);
+        Actions actions = Implements.fetch(Actions.class);
 
         for (String key : extra.getKeys(false)) {
             String path = "items." + key;
