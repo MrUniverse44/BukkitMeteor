@@ -3,8 +3,8 @@ package me.blueslime.bukkitmeteor.actions.type;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
 import me.blueslime.bukkitmeteor.implementation.Implements;
-import me.blueslime.bukkitmeteor.menus.Menu;
 import me.blueslime.bukkitmeteor.menus.Menus;
+import me.blueslime.bukkitmeteor.menus.list.PersonalMenu;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -26,11 +26,11 @@ public class MenuAction extends Action {
     public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
         String id = replace(parameter.toLowerCase(Locale.ENGLISH));
         Menus menus = Implements.fetch(Menus.class);
-        Menu menu = menus.getSpecifiedMenu(id);
-        if (menu != null) {
-            players.forEach(menu::openMenu);
-        } else {
-            plugin.getLogs().error("Can't find menu with id: " + id);
-        }
+        players.forEach(player -> {
+            PersonalMenu menu = menus.getSpecifiedMenu(id, player);
+            if (menu != null) {
+                menu.open(player);
+            }
+        });
     }
 }

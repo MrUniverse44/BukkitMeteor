@@ -57,12 +57,12 @@
                     <shadedPattern>me.blueslime.bukkitmeteor.libs.utilitiesapi</shadedPattern>
                 </relocation>
                 <relocation>
-                    <pattern>me.blueslime.menuhandlerapi</pattern>
-                    <shadedPattern>me.blueslime.bukkitmeteor.libs.menuhandlerapi</shadedPattern>
-                </relocation>
-                <relocation>
                     <pattern>me.blueslime.inventoryhandlerapi</pattern>
                     <shadedPattern>me.blueslime.bukkitmeteor.libs.inventoryhandlerapi</shadedPattern>
+                </relocation>
+                <relocation>
+                    <pattern>fr.mrmicky.fastinv</pattern>
+                    <shadedPattern>me.blueslime.bukkitmeteor.libs.fastinv</shadedPattern>
                 </relocation>
             </relocations>
 
@@ -115,9 +115,9 @@
           <scope>compile</scope>
       </dependency>
       <dependency>
-          <groupId>com.github.BlueSlimeDev</groupId>
-          <artifactId>MenuHandlerAPI</artifactId>
-          <version>0.9</version>
+          <groupId>fr.mrmicky</groupId>
+          <artifactId>FastInv</artifactId>
+          <version>3.0.4</version>
       </dependency>
       <dependency>
           <groupId>com.github.BlueSlimeDev</groupId>

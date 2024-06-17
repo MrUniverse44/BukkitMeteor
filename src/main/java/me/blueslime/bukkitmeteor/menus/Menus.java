@@ -1,27 +1,26 @@
 package me.blueslime.bukkitmeteor.menus;
 
+import fr.mrmicky.fastinv.FastInvManager;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.menus.event.MenusFolderGenerationEvent;
-import me.blueslime.bukkitmeteor.menus.list.DefaultMenu;
-import me.blueslime.menuhandlerapi.MenuHandlerAPI;
+import me.blueslime.bukkitmeteor.menus.list.PersonalMenu;
 import me.blueslime.utilitiesapi.reflection.utils.storage.PluginStorage;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.Locale;
 
 public class Menus implements Module {
-    private final PluginStorage<String, Menu> menuStorage = PluginStorage.initAsConcurrentHash();
+    private final PluginStorage<String, FileConfiguration> menuStorage = PluginStorage.initAsConcurrentHash();
     private final BukkitMeteorPlugin plugin;
 
     public Menus(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
-        MenuHandlerAPI.setCustomIdentifierPrefix("bkt-mir-");
-        MenuHandlerAPI.setCustomMenuPrefix("bkt-cmi-");
-        MenuHandlerAPI.setCustomItemPrefix("bkt-ime-");
-        MenuHandlerAPI.register(false, plugin);
+        FastInvManager.register(plugin);
     }
 
     @Override
@@ -29,8 +28,8 @@ public class Menus implements Module {
         menuStorage.clear();
 
         File folder = new File(
-                plugin.getDataFolder(),
-                "menus"
+            plugin.getDataFolder(),
+            "menus"
         );
 
         if (!folder.exists() && folder.mkdirs()) {
@@ -59,13 +58,9 @@ public class Menus implements Module {
             );
             plugin.getLogs().info("Registered menu with id: " + identifier);
 
-            menuStorage.add(
+            menuStorage.set(
                 identifier,
-                (k) -> new DefaultMenu(
-                    plugin,
-                    configuration,
-                    file
-                )
+                configuration
             );
         }
     }
@@ -80,7 +75,8 @@ public class Menus implements Module {
      * @param key is the file name (including .yml)
      * @return null if the menu don't exist
      */
-    public Menu getSpecifiedMenu(String key) {
+    @SuppressWarnings("unused")
+    public FileConfiguration getSpecifiedMenuSettings(String key) {
         if (key == null) {
             plugin.getLogs().error("Invalid null menu key");
             return null;
@@ -90,7 +86,35 @@ public class Menus implements Module {
         );
     }
 
-    public PluginStorage<String, Menu> getMenuStorage() {
+    /**
+     * Get a specified menu using the file name
+     * @param key is the file name (including .yml)
+     * @return null if the menu don't exist
+     */
+    public PersonalMenu getSpecifiedMenu(String key, Player player) {
+        if (key == null || player == null) {
+            plugin.getLogs().error("Invalid null menu or player keys for openMenu");
+            return null;
+        }
+        FileConfiguration configuration =  menuStorage.get(
+                key.toLowerCase(Locale.ENGLISH)
+        );
+        if (configuration == null) {
+            plugin.getLogs().error("Can't find menu key: " + key + " for: " + player.getName());
+            return null;
+        }
+        return new PersonalMenu(
+            plugin,
+            player,
+            configuration,
+            TextReplacer.builder()
+                    .replace("%player%", player.getName())
+                    .replace("<player>", player.getName())
+        );
+    }
+
+    @SuppressWarnings("unused")
+    public PluginStorage<String, FileConfiguration> getMenuStorageSettings() {
         return menuStorage;
     }
 }
