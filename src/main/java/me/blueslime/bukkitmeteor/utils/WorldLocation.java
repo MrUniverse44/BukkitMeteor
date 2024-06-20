@@ -95,10 +95,10 @@ public class WorldLocation {
         return x == location.getBlockX() && y == location.getBlockY() && z == location.getBlockZ();
     }
 
-    public void print(FileConfiguration configuration, String path) {
+    public void print(FileConfiguration configuration, String path, boolean deep) {
         path = !path.isEmpty() ? path.endsWith(".") ? path : path + "." : "";
 
-        path = path + "location-" + hashCode() + ".";
+        path = path + (deep ? "location-" + hashCode()  + "." : "");
 
         configuration.set(path + "world", world);
         configuration.set(path + "x", x);
