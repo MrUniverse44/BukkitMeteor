@@ -13,6 +13,7 @@ import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.bukkitmeteor.scoreboards.Scoreboards;
 import me.blueslime.bukkitmeteor.utils.FileUtil;
 import me.blueslime.bukkitmeteor.utils.PluginConsumer;
+import me.blueslime.utilitiesapi.item.nbt.PersistentDataNBT;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -32,6 +33,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     public abstract void onEnable();
 
     protected void initialize(Object instance) {
+        PersistentDataNBT.initialize(this);
         Implements.register(instance);
 
         new Actions(this);
