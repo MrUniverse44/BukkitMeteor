@@ -139,6 +139,10 @@ public class Implements {
         }
     }
 
+    public static void addRegistrationData(RegistrationData data, Object value) {
+        inst().CLASS_MAP.put(data, value);
+    }
+
     public <T> T fetchClass(Class<T> clazz) {
         return fetchClass(RegistrationData.fromData(clazz));
     }

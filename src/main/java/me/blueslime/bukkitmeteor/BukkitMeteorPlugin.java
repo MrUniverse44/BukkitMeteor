@@ -4,6 +4,7 @@ import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
+import me.blueslime.bukkitmeteor.implementation.module.RegisteredModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
 import me.blueslime.bukkitmeteor.inventory.CustomInventoryProvider;
@@ -64,6 +65,24 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
             for (Module module : modules) {
                 if (module == null) {
                     continue;
+                }
+                if (module instanceof RegisteredModule) {
+                    RegisteredModule registeredModule = (RegisteredModule) module;
+                    if (registeredModule.hasIdentifier()) {
+                        if (registeredModule.getIdentifier().isEmpty()) {
+                            Implements.addRegistrationData(
+                                RegistrationData.fromData(registeredModule, registeredModule.getClass()), registeredModule
+                            );
+                        } else {
+                            Implements.addRegistrationData(
+                                RegistrationData.fromData(registeredModule, registeredModule.getClass(), registeredModule.getIdentifier()), registeredModule
+                            );
+                        }
+                    } else {
+                        Implements.addRegistrationData(
+                            RegistrationData.fromData(registeredModule, registeredModule.getClass()), registeredModule
+                        );
+                    }
                 }
                 moduleMap.put(module.getClass(), module);
             }
