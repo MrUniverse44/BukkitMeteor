@@ -4,7 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
@@ -19,6 +18,13 @@ public class WorldLocation {
     protected final float yaw;
     protected final float pitch;
 
+    /**
+     * World Location instance
+     * @param world name
+     * @param x location
+     * @param y location
+     * @param z location
+     */
     public WorldLocation(String world, int x, int y, int z) {
         this.world = world;
         this.x = x;
@@ -28,6 +34,15 @@ public class WorldLocation {
         this.pitch = 0;
     }
 
+    /**
+     * World Location instance
+     * @param world name
+     * @param x location
+     * @param y location
+     * @param z location
+     * @param yaw data
+     * @param pitch data
+     */
     public WorldLocation(String world, int x, int y, int z, float yaw, float pitch) {
         this.world = world;
         this.x = x;
@@ -37,10 +52,20 @@ public class WorldLocation {
         this.pitch = pitch;
     }
 
+    /**
+     * Gets the WorldLocation from the player's location
+     * @param player to get the location
+     * @return world location
+     */
     public static WorldLocation at(Player player) {
         return at(player.getLocation());
     }
 
+    /**
+     * WorldLocation from a Bukkit Location
+     * @param location to convert
+     * @return converted location.
+     */
     public static WorldLocation at(Location location) {
         if (location.getWorld() != null) {
             return new WorldLocation(
@@ -95,7 +120,24 @@ public class WorldLocation {
         return x == location.getBlockX() && y == location.getBlockY() && z == location.getBlockZ();
     }
 
-    public void print(FileConfiguration configuration, String path, boolean deep) {
+    /**
+     * Prints the location data in a configuration file or section
+     * @param configuration to print data
+     * @param path location
+     * @param deep if deep is true it will generate a random location identifier, if is not it will use
+     *             your own path without modifications,
+     *             <br>
+     *             <br>
+     *             example in true:
+     *             <br>
+     *             path: example = example.location-(random number). will be used
+     *             <br>
+     *             <br>
+     *             example in false:
+     *             <br>
+     *             path: example2 = example2. will be used.
+     */
+    public void print(ConfigurationSection configuration, String path, boolean deep) {
         path = !path.isEmpty() ? path.endsWith(".") ? path : path + "." : "";
 
         path = path + (deep ? "location-" + hashCode()  + "." : "");
@@ -122,6 +164,12 @@ public class WorldLocation {
         );
     }
 
+    /**
+     * Gets the world location from a location data from yor configuration
+     * @param section configuration file or section
+     * @param path saved location
+     * @return WorldLocation, it will be null if section is null.
+     */
     public static WorldLocation fromConfiguration(ConfigurationSection section, String path) {
         if (section == null) {
             return null;

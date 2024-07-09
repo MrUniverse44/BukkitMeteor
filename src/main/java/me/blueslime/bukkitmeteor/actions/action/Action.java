@@ -9,7 +9,9 @@ import java.util.List;
 import java.util.Locale;
 
 public abstract class Action {
+
     private final List<String> prefixes = new ArrayList<>();
+    private boolean stop = false;
 
     public Action(String prefix, String... extraPrefixes) {
         this.prefixes.addAll(Arrays.asList(extraPrefixes));
@@ -56,12 +58,42 @@ public abstract class Action {
         return false;
     }
 
+    /**
+     * Prefixes of your actions
+     * @return the list of your prefixes
+     */
     public List<String> getPrefixes() {
         return prefixes;
     }
 
+    /**
+     * Checks if a player can execute this action
+     * @param player to check
+     * @return execute value
+     */
     public boolean canExecute(Player player) {
         return true;
+    }
+
+    /**
+     * With this method if you use this method in the execute method
+     * you can cancel the execution of upcoming actions, this is the perfect
+     * method for conditionals actions.
+     */
+    public void stopUpcomingActions() {
+        this.stop = true;
+    }
+
+    /**
+     * Stop or don't stop upcoming actions
+     * @param stop result
+     */
+    public void setStopUpcomingActions(boolean stop) {
+        this.stop = stop;
+    }
+
+    public boolean isStoppingUpcomingActions() {
+        return stop;
     }
 }
 

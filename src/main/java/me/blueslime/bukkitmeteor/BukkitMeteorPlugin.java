@@ -7,7 +7,7 @@ import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.module.RegisteredModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
-import me.blueslime.bukkitmeteor.inventory.CustomInventoryProvider;
+import me.blueslime.bukkitmeteor.inventory.Inventories;
 import me.blueslime.bukkitmeteor.logs.LoggerType;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.menus.Menus;
@@ -50,7 +50,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     private void registerOwnModules() {
         registerModule(
             Implements.fetch(Menus.class),
-            Implements.fetch(CustomInventoryProvider.class)
+            Implements.fetch(Inventories.class)
         ).finishOwn();
     }
 
@@ -100,12 +100,12 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
 
     private void loadOwnModules() {
         Implements.fetch(Menus.class).initialize();
-        Implements.fetch(CustomInventoryProvider.class).initialize();
+        Implements.fetch(Inventories.class).initialize();
     }
 
     private void loadModules() {
         for (Module module : moduleMap.values()) {
-            if (module instanceof Menus || module instanceof CustomInventoryProvider) {
+            if (module instanceof Menus || module instanceof Inventories) {
                 continue;
             }
             module.initialize();
@@ -126,10 +126,22 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         }
     }
 
+    /**
+     * Loads a file from the main plugin data folder
+     * @param fileName file
+     * @param resource if the file don't exist, it supports a resource to be loaded in that file, it supports null
+     * @return FileConfiguration
+     */
     public FileConfiguration load(String fileName, String resource) {
         return load(new File(getDataFolder(), fileName), resource);
     }
 
+    /**
+     * Loads a FileConfiguration from a file
+     * @param fetchFile file
+     * @param resource if the file don't exist, it supports a resource to be loaded in that file, it supports null
+     * @return FileConfiguration
+     */
     public FileConfiguration load(File fetchFile, String resource) {
         if (resource == null) {
             FileUtil.saveResource(fetchFile, null);
@@ -146,6 +158,12 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         );
     }
 
+    /**
+     * Save a Configuration file in a specified file
+     * @param configuration file
+     * @param file location to be saved
+     * @param resource if the file don't exist, and you have a template, it supports null.
+     */
     public void save(FileConfiguration configuration, File file, String resource) {
         if (configuration == null || file == null) {
             return;
@@ -180,6 +198,11 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         }
     }
 
+    @Override
+    public void build() {
+        // DO NOT NOTHING
+    }
+
     @SuppressWarnings("unchecked")
     public <T extends Module> T getModule(Class<T> module) {
         return (T) moduleMap.get(module);
@@ -200,8 +223,8 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     @Register
-    public CustomInventoryProvider provideInventories() {
-        return new CustomInventoryProvider(this);
+    public Inventories provideInventories() {
+        return new Inventories(this);
     }
 
     @Register

@@ -13,11 +13,11 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.Locale;
 
-public class CustomInventoryProvider implements Module {
+public class Inventories implements Module {
     private final PluginStorage<String, MeteorInventory> menuStorage = PluginStorage.initAsConcurrentHash();
     private final BukkitMeteorPlugin plugin;
 
-    public CustomInventoryProvider(BukkitMeteorPlugin plugin) {
+    public Inventories(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
         InventoryHandlerAPI.setCustomPrefix("bkt-mtr-");
         InventoryHandlerAPI.setCustomIdentifierPrefix("bkt-ite-");

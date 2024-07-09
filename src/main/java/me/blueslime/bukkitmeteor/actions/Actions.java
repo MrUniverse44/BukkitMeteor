@@ -51,10 +51,18 @@ public class Actions implements Module {
         externalActions.addAll(Arrays.asList(actions));
     }
 
+    /**
+     * Get the list of internal actions
+     * @return ArrayList
+     */
     public List<Action> getActions() {
         return action;
     }
 
+    /**
+     * Get the list of external actions
+     * @return ArrayList
+     */
     public List<Action> getExternalActions() {
         return externalActions;
     }
@@ -70,7 +78,9 @@ public class Actions implements Module {
         entireList.addAll(action);
 
         for (String param : actions) {
-            fetch(entireList, player, param);
+            if (fetch(entireList, player, param)) {
+                break;
+            }
         }
     }
 
@@ -81,21 +91,26 @@ public class Actions implements Module {
         entireList.addAll(action);
 
         for (String param : actions) {
-            fetch(entireList, player, replacer.apply(param));
+            if (fetch(entireList, player, replacer.apply(param))) {
+                break;
+            }
         }
     }
 
-    private void fetch(List<Action> list, Player player, String param) {
+    private boolean fetch(List<Action> list, Player player, String param) {
         if (player == null) {
-            return;
+            return false;
         }
         for (Action action : list) {
-            if (action.isAction(param) && action.canExecute(player)) {
-                action.execute(plugin, param, player);
-                return;
+            if (action.isAction(param)) {
+                if (action.canExecute(player)) {
+                    action.execute(plugin, param, player);
+                }
+                return action.isStoppingUpcomingActions();
             }
         }
         plugin.getLogger().info("'" + param + "' don't have an action, please see actions with /<command> actions");
+        return false;
     }
 
     @Register

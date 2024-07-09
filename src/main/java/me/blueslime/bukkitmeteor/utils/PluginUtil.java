@@ -1,6 +1,11 @@
 package me.blueslime.bukkitmeteor.utils;
 
 public class PluginUtil {
+    /**
+     * Converts the inserted value in a row of an chest inventory.
+     * @param size is the inserted value
+     * @return converted row.
+     */
     public static int getRows(int size) {
         if (size < 0) {
             return 9;
