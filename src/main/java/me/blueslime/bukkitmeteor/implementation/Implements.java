@@ -52,6 +52,9 @@ public class Implements {
     }
 
     public void unregisterAll(Module module) {
+        if (module.isPersistent()) {
+            return;
+        }
         List<RegistrationData> dataList = new ArrayList<>(CLASS_MAP.keySet());
 
         dataList.removeIf(data -> data.getParentModule() != null && data.getParentModule().equals(module));

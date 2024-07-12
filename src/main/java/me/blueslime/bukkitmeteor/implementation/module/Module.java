@@ -34,4 +34,8 @@ public interface Module {
     default void unregister() {
         Implements.unregister(this);
     }
+
+    default boolean isPersistent() {
+        return false;
+    }
 }
