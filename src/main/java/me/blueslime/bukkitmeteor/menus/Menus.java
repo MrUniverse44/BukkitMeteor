@@ -7,7 +7,7 @@ import me.blueslime.bukkitmeteor.menus.event.MenusFolderGenerationEvent;
 import me.blueslime.bukkitmeteor.menus.list.PersonalMenu;
 import me.blueslime.utilitiesapi.reflection.utils.storage.PluginStorage;
 import me.blueslime.utilitiesapi.text.TextReplacer;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -15,7 +15,7 @@ import java.io.File;
 import java.util.Locale;
 
 public class Menus implements Module {
-    private final PluginStorage<String, FileConfiguration> menuStorage = PluginStorage.initAsConcurrentHash();
+    private final PluginStorage<String, ConfigurationSection> menuStorage = PluginStorage.initAsConcurrentHash();
     private final BukkitMeteorPlugin plugin;
 
     public Menus(BukkitMeteorPlugin plugin) {
@@ -32,9 +32,17 @@ public class Menus implements Module {
             "menus"
         );
 
-        if (!folder.exists() && folder.mkdirs()) {
-            plugin.getServer().getPluginManager().callEvent(new MenusFolderGenerationEvent(folder));
-            plugin.getLogs().info("Created menus folder.");
+        if (!folder.exists()) {
+            MenusFolderGenerationEvent event = new MenusFolderGenerationEvent(folder);
+
+            plugin.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                return;
+            }
+            if (folder.mkdirs()) {
+                plugin.getLogs().info("Created menus folder.");
+            }
         }
 
         folder = new File(
@@ -49,7 +57,7 @@ public class Menus implements Module {
         }
 
         for (File file : files) {
-            FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+            ConfigurationSection configuration = YamlConfiguration.loadConfiguration(file);
 
 
             String identifier = file.getName().toLowerCase(Locale.ENGLISH).replace(
@@ -76,7 +84,7 @@ public class Menus implements Module {
      * @return null if the menu don't exist
      */
     @SuppressWarnings("unused")
-    public FileConfiguration getSpecifiedMenuSettings(String key) {
+    public ConfigurationSection getSpecifiedMenuSettings(String key) {
         if (key == null) {
             plugin.getLogs().error("Invalid null menu key");
             return null;
@@ -96,8 +104,8 @@ public class Menus implements Module {
             plugin.getLogs().error("Invalid null menu or player keys for openMenu");
             return null;
         }
-        FileConfiguration configuration =  menuStorage.get(
-                key.toLowerCase(Locale.ENGLISH)
+        ConfigurationSection configuration =  menuStorage.get(
+            key.toLowerCase(Locale.ENGLISH)
         );
         if (configuration == null) {
             plugin.getLogs().error("Can't find menu key: " + key + " for: " + player.getName());
@@ -108,13 +116,13 @@ public class Menus implements Module {
             player,
             configuration,
             TextReplacer.builder()
-                    .replace("%player%", player.getName())
-                    .replace("<player>", player.getName())
+                .replace("%player%", player.getName())
+                .replace("<player>", player.getName())
         );
     }
 
     @SuppressWarnings("unused")
-    public PluginStorage<String, FileConfiguration> getMenuStorageSettings() {
+    public PluginStorage<String, ConfigurationSection> getMenuStorageSettings() {
         return menuStorage;
     }
 }

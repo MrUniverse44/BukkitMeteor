@@ -10,7 +10,6 @@ import me.blueslime.inventoryhandlerapi.item.action.InventoryItemAction;
 import me.blueslime.inventoryhandlerapi.item.list.builder.WrapperInventoryItemBuilder;
 import me.blueslime.utilitiesapi.item.ItemWrapper;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -20,13 +19,13 @@ public class DefaultInventory extends MeteorInventory {
     private final Actions actions = Implements.fetch(Actions.class);
     private CustomInventory inventory;
 
-    public DefaultInventory(BukkitMeteorPlugin plugin, FileConfiguration configuration, File file) {
+    public DefaultInventory(BukkitMeteorPlugin plugin, ConfigurationSection configuration, File file) {
         super(plugin, configuration, file);
     }
 
     @Override
     public void load() {
-        FileConfiguration configuration = getConfiguration();
+        ConfigurationSection configuration = getConfiguration();
 
         inventory = CustomInventoryBuilder.builder(getFile().getName(), true).build();
 

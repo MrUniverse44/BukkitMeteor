@@ -6,18 +6,18 @@ import me.blueslime.utilitiesapi.item.ItemWrapper;
 import me.blueslime.utilitiesapi.item.dynamic.executor.DynamicExecutor;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import me.blueslime.utilitiesapi.tools.PlaceholderParser;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.Locale;
 
 public abstract class MeteorInventory {
-    private final FileConfiguration configuration;
+    private final ConfigurationSection configuration;
     private final BukkitMeteorPlugin plugin;
     private final File file;
 
-    public MeteorInventory(BukkitMeteorPlugin plugin, FileConfiguration configuration, File file) {
+    public MeteorInventory(BukkitMeteorPlugin plugin, ConfigurationSection configuration, File file) {
         this.configuration = configuration;
         this.plugin = plugin;
         this.file = file;
@@ -35,7 +35,7 @@ public abstract class MeteorInventory {
         setInventory(player, true);
     }
 
-    public FileConfiguration getConfiguration() {
+    public ConfigurationSection getConfiguration() {
         return configuration;
     }
 
@@ -77,15 +77,15 @@ public abstract class MeteorInventory {
                 );
             } else {
                 wrapper.setName(
-                        original.getName() != null ?
-                                replacer.apply(original.getName()) :
-                                original.getName()
+                    original.getName() != null ?
+                        replacer.apply(original.getName()) :
+                        original.getName()
                 );
 
                 wrapper.setLore(
-                        new ReturnableArrayList<>(original.getLore()).replace(
-                                replacer::apply
-                        )
+                    new ReturnableArrayList<>(original.getLore()).replace(
+                        replacer::apply
+                    )
                 );
             }
             return wrapper;

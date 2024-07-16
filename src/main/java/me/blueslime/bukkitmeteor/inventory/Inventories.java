@@ -7,7 +7,7 @@ import me.blueslime.bukkitmeteor.inventory.handlers.DefaultInventory;
 import me.blueslime.bukkitmeteor.inventory.inventory.MeteorInventory;
 import me.blueslime.inventoryhandlerapi.InventoryHandlerAPI;
 import me.blueslime.utilitiesapi.reflection.utils.storage.PluginStorage;
-import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -33,9 +33,18 @@ public class Inventories implements Module {
                 "inventories"
         );
 
-        if (!folder.exists() && folder.mkdirs()) {
-            plugin.getServer().getPluginManager().callEvent(new InventoriesFolderGenerationEvent(folder));
-            plugin.getLogs().info("Created inventories folder.");
+        if (!folder.exists()) {
+            InventoriesFolderGenerationEvent event = new InventoriesFolderGenerationEvent(folder);
+
+            plugin.getServer().getPluginManager().callEvent(event);
+
+            if (event.isCancelled()) {
+                return;
+            }
+
+            if (folder.mkdirs()) {
+                plugin.getLogs().info("Created inventories folder.");
+            }
         }
 
         folder = new File(
@@ -50,7 +59,7 @@ public class Inventories implements Module {
         }
 
         for (File file : files) {
-            FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+            ConfigurationSection configuration = YamlConfiguration.loadConfiguration(file);
 
             String identifier = file.getName().toLowerCase(Locale.ENGLISH).replace(
                 ".yml",

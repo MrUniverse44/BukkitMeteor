@@ -12,7 +12,6 @@ import me.blueslime.utilitiesapi.text.TextReplacer;
 import me.blueslime.utilitiesapi.text.TextUtilities;
 import me.blueslime.utilitiesapi.tools.PlaceholderParser;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import java.util.List;
 
@@ -20,11 +19,12 @@ public class PersonalMenu extends FastInv {
 
     private final BukkitMeteorPlugin plugin;
 
-    public PersonalMenu(BukkitMeteorPlugin plugin, Player player, FileConfiguration configuration) {
+    @SuppressWarnings("unused")
+    public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration) {
         this(plugin, player, configuration, TextReplacer.builder());
     }
 
-    public PersonalMenu(BukkitMeteorPlugin plugin, Player player, FileConfiguration configuration, TextReplacer replacer) {
+    public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration, TextReplacer replacer) {
         super(
             PluginUtil.getRows(configuration.getInt("menu-settings.rows", 54)),
             TextUtilities.colorize(
@@ -41,7 +41,7 @@ public class PersonalMenu extends FastInv {
             return;
         }
 
-        replacer = TextReplacer.builder()
+        replacer = replacer
             .replace("<player>", player.getName())
             .replace("<player_name>", player.getName())
             .replace("<heart>", "❤");
