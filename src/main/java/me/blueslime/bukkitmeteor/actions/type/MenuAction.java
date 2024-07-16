@@ -24,12 +24,28 @@ public class MenuAction extends Action {
      */
     @Override
     public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
-        String id = replace(parameter.toLowerCase(Locale.ENGLISH));
+        String id = replace(parameter);
+        String[] split = id.replace(" ", "").split(",");
+
+        String filename = split[0].toLowerCase(Locale.ENGLISH);
+        String playerName = split.length >= 2 ? split[1] : null;
+
         Menus menus = Implements.fetch(Menus.class);
         players.forEach(player -> {
-            PersonalMenu menu = menus.getSpecifiedMenu(id, player);
-            if (menu != null) {
-                menu.open(player);
+            if (playerName == null) {
+                PersonalMenu menu = menus.getSpecifiedMenu(filename, player);
+                if (menu != null) {
+                    menu.open(player);
+                }
+            } else {
+                Player targetPlayer = plugin.getServer().getPlayer(playerName);
+                if (targetPlayer == null) {
+                    return;
+                }
+                PersonalMenu menu = menus.getSpecifiedMenu(filename, targetPlayer);
+                if (menu != null) {
+                    menu.open(targetPlayer);
+                }
             }
         });
     }
