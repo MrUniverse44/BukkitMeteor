@@ -28,6 +28,11 @@ public class MeteorGetter implements Module {
         return new Menus(plugin);
     }
 
+    @Override
+    public boolean isPersistent() {
+        return true;
+    }
+
     @Register
     public Inventories provideInventories() {
         return new Inventories(plugin);
