@@ -2,10 +2,10 @@ package me.blueslime.bukkitmeteor;
 
 import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
+import me.blueslime.bukkitmeteor.getter.MeteorGetter;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.module.RegisteredModule;
-import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
 import me.blueslime.bukkitmeteor.inventory.Inventories;
 import me.blueslime.bukkitmeteor.logs.LoggerType;
@@ -35,7 +35,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
 
     protected void initialize(Object instance) {
         PersistentDataNBT.initialize(this);
-        Implements.register(instance);
+        new MeteorGetter(this);
 
         new Actions(this);
         new Scoreboards(this);
@@ -180,6 +180,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         );
     }
 
+    public MeteorLogger getLogs() {
+        return this;
+    }
+
     @Override
     public void send(String... messages) {
         ConsoleCommandSender sender = getServer().getConsoleSender();
@@ -212,26 +216,6 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         return moduleMap;
     }
 
-    @Register(identifier = "settings.yml")
-    public FileConfiguration provideSettings() {
-        return load(new File(getDataFolder(), "settings.yml"), "settings.yml");
-    }
-
-    @Register
-    public Menus provideMenus() {
-        return new Menus(this);
-    }
-
-    @Register
-    public Inventories provideInventories() {
-        return new Inventories(this);
-    }
-
-    @Register
-    public MeteorLogger getLogs() {
-        return this;
-    }
-
     @Override
     public MeteorLogger setPrefix(LoggerType log, String prefix) {
         logMap.put(log, prefix);
@@ -244,11 +228,6 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
                 prefix,
                 (k) -> prefix.getDefaultPrefix()
         );
-    }
-
-    @Register
-    public BukkitMeteorPlugin provideBukkitMeteorPlugin() {
-        return this;
     }
 
     public boolean isPluginEnabled(String pluginName) {
