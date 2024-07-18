@@ -90,7 +90,7 @@ public class Inventories implements Module {
 
     @Override
     public void shutdown() {
-        menuStorage.clear();
+
     }
 
     /**

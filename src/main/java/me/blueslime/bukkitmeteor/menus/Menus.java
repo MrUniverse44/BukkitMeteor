@@ -74,7 +74,7 @@ public class Menus implements Module {
     }
 
     public void shutdown() {
-        menuStorage.clear();
+
     }
 
     @Override
