@@ -25,7 +25,7 @@ public class Menus implements Module {
 
     @Override
     public void initialize() {
-        menuStorage.clear();
+        shutdown();
 
         File folder = new File(
             plugin.getDataFolder(),
@@ -71,6 +71,15 @@ public class Menus implements Module {
                 configuration
             );
         }
+    }
+
+    public void shutdown() {
+        menuStorage.clear();
+    }
+
+    @Override
+    public boolean isPersistent() {
+        return true;
     }
 
     @Override

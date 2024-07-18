@@ -26,7 +26,7 @@ public class Inventories implements Module {
 
     @Override
     public void initialize() {
-        menuStorage.clear();
+        shutdown();
 
         File folder = new File(
                 plugin.getDataFolder(),
@@ -79,8 +79,18 @@ public class Inventories implements Module {
     }
 
     @Override
+    public boolean isPersistent() {
+        return true;
+    }
+
+    @Override
     public void reload() {
         initialize();
+    }
+
+    @Override
+    public void shutdown() {
+        menuStorage.clear();
     }
 
     /**

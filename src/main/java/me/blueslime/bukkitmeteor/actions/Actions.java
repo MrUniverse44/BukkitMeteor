@@ -84,6 +84,11 @@ public class Actions implements Module {
         }
     }
 
+    @Override
+    public boolean isPersistent() {
+        return true;
+    }
+
     public void execute(List<String> actions, Player player, TextReplacer replacer) {
         List<Action> entireList = new ReturnableArrayList<Action>();
 
