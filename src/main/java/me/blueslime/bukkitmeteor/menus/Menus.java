@@ -8,6 +8,7 @@ import me.blueslime.bukkitmeteor.menus.list.PersonalMenu;
 import me.blueslime.utilitiesapi.reflection.utils.storage.PluginStorage;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
@@ -57,8 +58,7 @@ public class Menus implements Module {
         }
 
         for (File file : files) {
-            ConfigurationSection configuration = YamlConfiguration.loadConfiguration(file);
-
+            FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
             String identifier = file.getName().toLowerCase(Locale.ENGLISH).replace(
                 ".yml",
