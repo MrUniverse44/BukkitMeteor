@@ -7,7 +7,7 @@ import me.blueslime.bukkitmeteor.inventory.handlers.DefaultInventory;
 import me.blueslime.bukkitmeteor.inventory.inventory.MeteorInventory;
 import me.blueslime.inventoryhandlerapi.InventoryHandlerAPI;
 import me.blueslime.utilitiesapi.reflection.utils.storage.PluginStorage;
-import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
@@ -59,7 +59,7 @@ public class Inventories implements Module {
         }
 
         for (File file : files) {
-            ConfigurationSection configuration = YamlConfiguration.loadConfiguration(file);
+            FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 
             String identifier = file.getName().toLowerCase(Locale.ENGLISH).replace(
                 ".yml",

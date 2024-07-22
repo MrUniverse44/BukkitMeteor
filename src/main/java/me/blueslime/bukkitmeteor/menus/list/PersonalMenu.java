@@ -38,7 +38,8 @@ public class PersonalMenu extends FastInv {
         ConfigurationSection extra = configuration.getConfigurationSection("items");
 
         if (extra == null) {
-            return;
+            // find items in the same configuration section.
+            extra = configuration;
         }
 
         replacer = replacer
