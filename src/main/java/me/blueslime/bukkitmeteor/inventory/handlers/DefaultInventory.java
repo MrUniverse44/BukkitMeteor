@@ -31,6 +31,11 @@ public class DefaultInventory extends MeteorInventory {
 
         ConfigurationSection section = getConfiguration().getConfigurationSection("items");
 
+        if (section == null) {
+            // Find items at that path
+            section = getConfiguration();
+        }
+
         if (section != null) {
 
             for (String item : section.getKeys(false)) {
