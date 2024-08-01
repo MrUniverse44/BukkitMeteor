@@ -1,13 +1,16 @@
 package me.blueslime.bukkitmeteor.implementation;
 
+import me.blueslime.bukkitmeteor.implementation.data.Implement;
 import me.blueslime.bukkitmeteor.implementation.error.IllegalMethodRegistration;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
 import me.blueslime.bukkitmeteor.utils.PluginConsumer;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -79,33 +82,47 @@ public class Implements {
                     (Module) instancedClass : null;
 
             for (Field field : fields) {
+                if (field.isAnnotationPresent(Implement.class)) {
+                    field.setAccessible(true);
+                    Implement implement = field.getAnnotation(Implement.class);
+                    Class<?> fieldClazz = field.getType();
+                    PluginConsumer.process(
+                        () -> {
+                            if (implement.identifier().isEmpty()) {
+                                field.set(instancedClass, Implements.fetch(fieldClazz));
+                            } else {
+                                field.set(instancedClass, Implements.fetch(fieldClazz, implement.identifier()));
+                            }
+                        }
+                    );
+                }
                 if (field.isAnnotationPresent(Register.class)) {
                     field.setAccessible(true);
                     Register data = field.getAnnotation(Register.class);
                     PluginConsumer.process(
-                            () -> {
-                                Object value = field.get(instancedClass);
-                                if (value != null) {
-                                    if (data.identifier().isEmpty()) {
-                                        CLASS_MAP.put(
-                                                RegistrationData.fromData(
-                                                        module,
-                                                        field.getType()
-                                                ),
-                                                value
-                                        );
-                                    } else {
-                                        CLASS_MAP.put(
-                                                RegistrationData.fromData(
-                                                        module,
-                                                        field.getType(),
-                                                        data.identifier()
-                                                ),
-                                                value
-                                        );
-                                    }
+                        () -> {
+                            Object value = field.get(instancedClass);
+                            if (value != null) {
+                                if (data.identifier().isEmpty()) {
+                                    CLASS_MAP.put(
+                                        RegistrationData.fromData(
+                                            module,
+                                            field.getType()
+                                        ),
+                                        value
+                                    );
+                                } else {
+                                    CLASS_MAP.put(
+                                        RegistrationData.fromData(
+                                            module,
+                                            field.getType(),
+                                            data.identifier()
+                                        ),
+                                        value
+                                    );
                                 }
                             }
+                        }
                     );
                 }
             }
@@ -140,6 +157,61 @@ public class Implements {
 
             clazz = clazz.getSuperclass();
         }
+    }
+
+    /**
+     * Use this if you have a class with
+     * @param clazz to create instance.
+     */
+    public static <T> T createInstance(Class<T> clazz) {
+        return inst().create(clazz);
+    }
+
+    public <T> T create(Class<T> clazz) {
+        // Get all class constructors
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+
+        for (Constructor<?> constructor : constructors) {
+            T value = processConstructor(clazz, constructor);
+            if (value != null) {
+                return value;
+            }
+        }
+
+        throw new RuntimeException("No suitable constructor found or not all parameters are annotated.");
+    }
+
+    private <T> T processConstructor(Class<T> clazz, Constructor<?> constructor) {
+        Object[] parameters = new Object[constructor.getParameterCount()];
+        boolean allAnnotated = true;
+
+        // Iterator
+        Parameter[] params = constructor.getParameters();
+        for (int i = 0; i < params.length; i++) {
+            Parameter parameter = params[i];
+            if (parameter.isAnnotationPresent(Implement.class)) {
+                // Gets the annotation
+                Implement annotation = parameter.getAnnotation(Implement.class);
+                // Sets the parameter to the implement result.
+                if (annotation.identifier().isEmpty()) {
+                    parameters[i] = Implements.fetch(parameter.getType());
+                } else {
+                    parameters[i] = Implements.fetch(parameter.getType(), annotation.identifier());
+                }
+            } else {
+                allAnnotated = false; // No todos los parámetros están anotados
+            }
+        }
+
+        if (allAnnotated) {
+            // Call the constructor with the parameters
+            try {
+                return clazz.cast(constructor.newInstance(parameters));
+            } catch (Exception ignored) {
+
+            }
+        }
+        return null;
     }
 
     public static void addRegistrationData(RegistrationData data, Object value) {

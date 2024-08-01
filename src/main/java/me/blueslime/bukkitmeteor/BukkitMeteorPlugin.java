@@ -63,31 +63,46 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     public BukkitMeteorPlugin registerModule(Module... modules) {
         if (modules != null && modules.length >= 1) {
             for (Module module : modules) {
-                if (module == null) {
-                    continue;
-                }
-                if (module instanceof RegisteredModule) {
-                    RegisteredModule registeredModule = (RegisteredModule) module;
-                    if (registeredModule.hasIdentifier()) {
-                        if (registeredModule.getIdentifier().isEmpty()) {
-                            Implements.addRegistrationData(
-                                RegistrationData.fromData(registeredModule, registeredModule.getClass()), registeredModule
-                            );
-                        } else {
-                            Implements.addRegistrationData(
-                                RegistrationData.fromData(registeredModule, registeredModule.getClass(), registeredModule.getIdentifier()), registeredModule
-                            );
-                        }
-                    } else {
-                        Implements.addRegistrationData(
-                            RegistrationData.fromData(registeredModule, registeredModule.getClass()), registeredModule
-                        );
-                    }
-                }
-                moduleMap.put(module.getClass(), module);
+                fetchDataEntries(module);
             }
         }
         return this;
+    }
+
+    @SafeVarargs
+    public final BukkitMeteorPlugin registerModule(Class<Module>... modules) {
+        if (modules != null && modules.length >= 1) {
+            for (Class<Module> moduleClass : modules) {
+                Module module = Implements.createInstance(moduleClass);
+                fetchDataEntries(module);
+            }
+        }
+        return this;
+    }
+
+    private void fetchDataEntries(Module module) {
+        if (module == null) {
+            return;
+        }
+        if (module instanceof RegisteredModule) {
+            RegisteredModule registeredModule = (RegisteredModule) module;
+            if (registeredModule.hasIdentifier()) {
+                if (registeredModule.getIdentifier().isEmpty()) {
+                    Implements.addRegistrationData(
+                            RegistrationData.fromData(registeredModule, registeredModule.getClass()), registeredModule
+                    );
+                } else {
+                    Implements.addRegistrationData(
+                            RegistrationData.fromData(registeredModule, registeredModule.getClass(), registeredModule.getIdentifier()), registeredModule
+                    );
+                }
+            } else {
+                Implements.addRegistrationData(
+                        RegistrationData.fromData(registeredModule, registeredModule.getClass()), registeredModule
+                );
+            }
+        }
+        moduleMap.put(module.getClass(), module);
     }
 
     public void finish() {
