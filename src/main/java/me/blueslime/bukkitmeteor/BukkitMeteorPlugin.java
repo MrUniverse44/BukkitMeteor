@@ -70,9 +70,9 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     @SafeVarargs
-    public final BukkitMeteorPlugin registerModule(Class<Module>... modules) {
+    public final BukkitMeteorPlugin registerModule(Class<? extends Module>... modules) {
         if (modules != null && modules.length >= 1) {
-            for (Class<Module> moduleClass : modules) {
+            for (Class<? extends Module> moduleClass : modules) {
                 Module module = Implements.createInstance(moduleClass);
                 fetchDataEntries(module);
             }
