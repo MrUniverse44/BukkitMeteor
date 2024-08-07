@@ -51,6 +51,14 @@ public class Scoreboards {
         return PLACEHOLDERS;
     }
 
+    public void updateTitle(SternalBoard scoreboard, String title) {
+        scoreboard.updateTitle(
+            PLACEHOLDERS ?
+                TextUtilities.colorize(PlaceholderAPI.setPlaceholders(scoreboard.getPlayer(), title)) :
+                TextUtilities.colorize(title)
+        );
+    }
+
     public void setScoreboard(SternalBoard scoreboard, Player player, TextReplacer replacer, String title, String... lines) {
         if (title != null) {
             scoreboard.updateTitle(
