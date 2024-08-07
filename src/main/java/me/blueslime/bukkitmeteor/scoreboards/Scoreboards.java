@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
 public class Scoreboards {
@@ -51,18 +52,20 @@ public class Scoreboards {
     }
 
     public void setScoreboard(SternalBoard scoreboard, Player player, TextReplacer replacer, String title, String... lines) {
-        scoreboard.updateTitle(
-            PLACEHOLDERS ?
-                TextUtilities.colorize(
-                    PlaceholderAPI.setPlaceholders(
-                        player,
+        if (title != null) {
+            scoreboard.updateTitle(
+                PLACEHOLDERS ?
+                    TextUtilities.colorize(
+                        PlaceholderAPI.setPlaceholders(
+                            player,
+                            replacer.apply(title)
+                        )
+                    ) :
+                    TextUtilities.colorize(
                         replacer.apply(title)
                     )
-                ) :
-                TextUtilities.colorize(
-                    replacer.apply(title)
-                )
-        );
+            );
+        }
 
         scoreboard.updateLines(
             lines
@@ -132,6 +135,22 @@ public class Scoreboards {
 
     public void remove(Player player) {
         scoreboardMap.remove(player.getUniqueId());
+    }
+
+    /**
+     * Execute a consumer per scoreboard
+     * @param scoreboardConsumer to execute
+     */
+    public void forEach(Consumer<SternalBoard> scoreboardConsumer) {
+        find().forEach(scoreboardConsumer::accept);
+    }
+
+    /**
+     * Scoreboard value set.
+     * @return creates a new {@link HashSet}.
+     */
+    public Set<SternalBoard> find() {
+        return new HashSet<>(scoreboardMap.values());
     }
 
     @Register
