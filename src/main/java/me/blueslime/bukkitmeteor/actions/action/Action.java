@@ -79,23 +79,6 @@ public abstract class Action {
     }
 
     /**
-     * With this method if you use this method in the execute method
-     * you can cancel the execution of upcoming actions, this is the perfect
-     * method for conditionals actions.
-     */
-    public void stopUpcomingActions() {
-        this.stop = true;
-    }
-
-    /**
-     * Stop or don't stop upcoming actions
-     * @param stop result
-     */
-    public void setStopUpcomingActions(boolean stop) {
-        this.stop = stop;
-    }
-
-    /**
      * Check if a player is stopping upcoming actions
      * @param plugin instance
      * @param parameter used
