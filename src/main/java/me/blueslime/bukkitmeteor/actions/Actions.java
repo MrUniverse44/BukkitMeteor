@@ -108,10 +108,10 @@ public class Actions implements Module {
         }
         for (Action action : list) {
             if (action.isAction(param)) {
-                if (action.canExecute(player)) {
+                if (action.canExecute(plugin, player, param)) {
                     action.execute(plugin, param, player);
                 }
-                return action.isStoppingUpcomingActions();
+                return action.isStoppingUpcomingActions(plugin, param, player);
             }
         }
         plugin.getLogger().info("'" + param + "' don't have an action, please see actions with /<command> actions");

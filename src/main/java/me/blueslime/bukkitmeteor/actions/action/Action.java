@@ -11,6 +11,7 @@ import java.util.Locale;
 public abstract class Action {
 
     private final List<String> prefixes = new ArrayList<>();
+
     private boolean stop = false;
 
     public Action(String prefix, String... extraPrefixes) {
@@ -68,10 +69,12 @@ public abstract class Action {
 
     /**
      * Checks if a player can execute this action
+     * @param plugin instance
      * @param player to check
+     * @param parameter to check
      * @return execute value
      */
-    public boolean canExecute(Player player) {
+    public boolean canExecute(BukkitMeteorPlugin plugin, Player player, String parameter) {
         return true;
     }
 
@@ -92,8 +95,19 @@ public abstract class Action {
         this.stop = stop;
     }
 
-    public boolean isStoppingUpcomingActions() {
-        return stop;
+    /**
+     * Check if a player is stopping upcoming actions
+     * @param plugin instance
+     * @param parameter used
+     * @param player of this check
+     * @return result
+     */
+    public boolean isStoppingUpcomingActions(BukkitMeteorPlugin plugin, String parameter, Player player) {
+        if (stop) {
+            stop = false;
+            return true;
+        }
+        return false;
     }
 }
 
