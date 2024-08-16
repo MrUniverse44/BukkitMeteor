@@ -12,11 +12,11 @@ import java.util.List;
 @SuppressWarnings("unused")
 public class WorldLocation {
     protected final String world;
-    protected final int x;
-    protected final int y;
-    protected final int z;
-    protected final float yaw;
-    protected final float pitch;
+    protected double x;
+    protected double y;
+    protected double z;
+    protected float yaw;
+    protected float pitch;
 
     /**
      * World Location instance
@@ -25,7 +25,7 @@ public class WorldLocation {
      * @param y location
      * @param z location
      */
-    public WorldLocation(String world, int x, int y, int z) {
+    public WorldLocation(String world, double x, double y, double z) {
         this.world = world;
         this.x = x;
         this.y = y;
@@ -43,7 +43,7 @@ public class WorldLocation {
      * @param yaw data
      * @param pitch data
      */
-    public WorldLocation(String world, int x, int y, int z, float yaw, float pitch) {
+    public WorldLocation(String world, double x, double y, double z, float yaw, float pitch) {
         this.world = world;
         this.x = x;
         this.y = y;
@@ -91,23 +91,59 @@ public class WorldLocation {
         return world;
     }
 
-    public int getX() {
+    public double getX() {
         return x;
     }
 
-    public int getY() {
+    public double getY() {
         return y;
     }
 
-    public int getZ() {
+    public double getZ() {
         return z;
+    }
+
+    public int getBlockX() {
+        return floor(x);
+    }
+
+    public int getBlockY() {
+        return floor(y);
+    }
+
+    public int getBlockZ() {
+        return floor(z);
+    }
+
+    public void add(double x, double y, double z, float yaw, float pitch) {
+        this.x += x;
+        this.y += y;
+        this.z += z;
+        this.yaw += yaw;
+        this.pitch += pitch;
+    }
+
+    public void remove(double x, double y, double z, float yaw, float pitch) {
+        this.x -= x;
+        this.y -= y;
+        this.z -= z;
+        this.yaw -= yaw;
+        this.pitch -= pitch;
+    }
+
+    private int floor(double num) {
+        final int floor = (int) num;
+        return floor == num ? floor : floor - (int) (Double.doubleToRawLongBits(num) >>> 63);
     }
 
     public boolean compareLocations(WorldLocation location) {
         if (world != null) {
-            return x == location.getX() && y == location.getY() && z == location.getZ() && world.equals(location.getWorld());
+            return getBlockX() == location.getBlockX() &&
+                    getBlockY() == location.getBlockY() &&
+                    getBlockZ() == location.getBlockZ() &&
+                    world.equals(location.getWorld());
         }
-        return x == location.getX() && y == location.getY() && z == location.getZ();
+        return getBlockX() == location.getBlockX() && getBlockY() == location.getBlockY() && getBlockZ() == location.getBlockZ();
     }
 
     public boolean compareLocation(Location location) {
@@ -115,9 +151,13 @@ public class WorldLocation {
             if (location.getWorld() == null) {
                 return false;
             }
-            return x == location.getBlockX() && y == location.getBlockY() && z == location.getBlockZ() && world.equals(location.getWorld().getName());
+            return getBlockX() == location.getBlockX() &&
+                    getBlockY() == location.getBlockY() &&
+                    getBlockZ() == location.getBlockZ() && world.equals(location.getWorld().getName());
         }
-        return x == location.getBlockX() && y == location.getBlockY() && z == location.getBlockZ();
+        return getBlockX() == location.getBlockX() &&
+                getBlockY() == location.getBlockY() &&
+                getBlockZ() == location.getBlockZ();
     }
 
     /**
@@ -178,9 +218,9 @@ public class WorldLocation {
 
         return new WorldLocation(
                 section.getString(path +"world", null),
-                section.getInt(path + "x", 0),
-                section.getInt(path + "y", 0),
-                section.getInt(path + "z", 0),
+                section.getDouble(path + "x", 0),
+                section.getDouble(path + "y", 0),
+                section.getDouble(path + "z", 0),
                 Float.parseFloat(section.getString(path + "yaw", "0")),
                 Float.parseFloat(section.getString(path + "pitch", "0"))
         );
@@ -237,9 +277,9 @@ public class WorldLocation {
     @Override
     public int hashCode() {
         int result = world != null ? world.hashCode() : 0;
-        result = 31 * result + x;
-        result = 31 * result + y;
-        result = 31 * result + z;
+        result = 31 * result + getBlockX();
+        result = 31 * result + getBlockY();
+        result = 31 * result + getBlockZ();
         return result;
     }
 }

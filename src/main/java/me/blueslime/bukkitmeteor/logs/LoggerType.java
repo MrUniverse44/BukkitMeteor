@@ -6,17 +6,17 @@ public enum LoggerType {
     DEBUG,
     ERROR;
 
-    public String getDefaultPrefix() {
+    public String getDefaultPrefix(String pluginName) {
         switch (this) {
             default:
             case INFO:
-                return "&9Logs: &f";
+                return "&9" + pluginName + " Logs: &f";
             case WARN:
-                return "&6Logs: &f";
+                return "&6" + pluginName + " Logs: &f";
             case DEBUG:
-                return "&bLogs: &f";
+                return "&b" + pluginName + " Logs: &f";
             case ERROR:
-                return "&4Logs: &f";
+                return "&4" + pluginName + " Logs: &f";
         }
     }
 }
