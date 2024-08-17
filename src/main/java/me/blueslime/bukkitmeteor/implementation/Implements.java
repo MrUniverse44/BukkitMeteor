@@ -65,6 +65,7 @@ public class Implements extends AbstractImplementer {
         for (Constructor<?> constructor : constructors) {
             T value = processConstructor(clazz, constructor);
             if (value != null) {
+                registerAll(value);
                 return value;
             }
         }
