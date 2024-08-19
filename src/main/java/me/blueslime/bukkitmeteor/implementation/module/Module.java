@@ -23,15 +23,25 @@ public interface Module {
         unregister();
     }
 
-    default void register() {
+    /**
+     * Register this module to the Implements
+     */
+    default void registerImplementedModule() {
         Implements.register(this);
     }
 
-    default void register(Object thisInstance) {
-        Implements.register(thisInstance);
+    /**
+     * Register this or other module to the Implements
+     * @param instance to be registered
+     */
+    default void registerImplementedModule(Object instance) {
+        Implements.register(instance);
     }
 
-    default void unregister() {
+    /**
+     * Unregister implemented module
+     */
+    default void unregisterImplementedModule() {
         Implements.unregister(this);
     }
 
