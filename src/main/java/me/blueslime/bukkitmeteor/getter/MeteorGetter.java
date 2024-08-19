@@ -15,7 +15,7 @@ public class MeteorGetter implements Module {
 
     public MeteorGetter(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
-        register(this);
+        registerImplementedModule(this);
     }
 
     @Register(identifier = "settings.yml")

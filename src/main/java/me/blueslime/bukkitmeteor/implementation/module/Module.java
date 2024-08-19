@@ -20,7 +20,7 @@ public interface Module {
     }
 
     default void shutdown() {
-        unregister();
+        unregisterImplementedModule();
     }
 
     /**
