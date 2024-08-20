@@ -20,6 +20,7 @@ import java.util.List;
 public class PersonalMenu extends FastInv {
 
     private final BukkitMeteorPlugin plugin;
+    private boolean canOpenMenu = true;
 
     @SuppressWarnings("unused")
     public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration) {
@@ -43,6 +44,7 @@ public class PersonalMenu extends FastInv {
         if (conditions != null) {
             if (!conditions.execute(conditionList, player)) {
                 this.plugin = plugin;
+                this.canOpenMenu = false;
                 return;
             }
         }
@@ -145,6 +147,14 @@ public class PersonalMenu extends FastInv {
                 }
             }
         }
+    }
+
+    @Override
+    public void open(Player player) {
+        if (!canOpenMenu) {
+            return;
+        }
+        super.open(player);
     }
 
     public DynamicExecutor getItemExecutor(TextReplacer replacer) {
