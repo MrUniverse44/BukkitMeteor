@@ -4,7 +4,7 @@ import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
 import me.blueslime.bukkitmeteor.actions.type.*;
 import me.blueslime.bukkitmeteor.implementation.Implements;
-import me.blueslime.bukkitmeteor.implementation.module.Module;
+import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
 import me.blueslime.utilitiesapi.text.TextReplacer;
@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 import java.util.Arrays;
 import java.util.List;
 
-public class Actions implements Module {
+public class Actions implements AdvancedModule {
     private final List<Action> externalActions = new ReturnableArrayList<Action>();
     private final List<Action> action = new ReturnableArrayList<Action>();
     private final BukkitMeteorPlugin plugin;
@@ -82,11 +82,6 @@ public class Actions implements Module {
                 break;
             }
         }
-    }
-
-    @Override
-    public boolean isPersistent() {
-        return true;
     }
 
     public void execute(List<String> actions, Player player, TextReplacer replacer) {

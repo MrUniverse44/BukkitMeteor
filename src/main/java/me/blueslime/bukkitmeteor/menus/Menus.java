@@ -130,6 +130,31 @@ public class Menus implements Module {
         );
     }
 
+    /**
+     * Get a specified menu using the file name
+     * @param key is the file name (including .yml)
+     * @return null if the menu don't exist
+     */
+    public PersonalMenu getSpecifiedMenu(String key, Player player, TextReplacer replacer) {
+        if (key == null || player == null) {
+            plugin.getLogs().error("Invalid null menu or player keys for openMenu");
+            return null;
+        }
+        ConfigurationSection configuration =  menuStorage.get(
+                key.toLowerCase(Locale.ENGLISH)
+        );
+        if (configuration == null) {
+            plugin.getLogs().error("Can't find menu key: " + key + " for: " + player.getName());
+            return null;
+        }
+        return new PersonalMenu(
+                plugin,
+                player,
+                configuration,
+                replacer
+        );
+    }
+
     @SuppressWarnings("unused")
     public PluginStorage<String, ConfigurationSection> getMenuStorageSettings() {
         return menuStorage;

@@ -2,6 +2,7 @@ package me.blueslime.bukkitmeteor;
 
 import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
+import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.getter.MeteorGetter;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
@@ -38,6 +39,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         new MeteorGetter(this);
 
         new Actions(this);
+        new Conditions(this);
         new Scoreboards(this);
 
         registerOwnModules();

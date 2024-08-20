@@ -3,6 +3,7 @@ package me.blueslime.bukkitmeteor.menus.list;
 import fr.mrmicky.fastinv.FastInv;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.Actions;
+import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.utils.PluginUtil;
 import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
@@ -13,6 +14,7 @@ import me.blueslime.utilitiesapi.text.TextUtilities;
 import me.blueslime.utilitiesapi.tools.PlaceholderParser;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+
 import java.util.List;
 
 public class PersonalMenu extends FastInv {
@@ -33,6 +35,18 @@ public class PersonalMenu extends FastInv {
                     .replace("<page>", String.valueOf(1))
             )
         );
+
+        List<String> conditionList = configuration.getStringList("menu-settings.open-conditions");
+
+        Conditions conditions = Implements.fetch(Conditions.class);
+
+        if (conditions != null) {
+            if (!conditions.execute(conditionList, player)) {
+                this.plugin = plugin;
+                return;
+            }
+        }
+
         this.plugin = plugin;
 
         ConfigurationSection extra = configuration.getConfigurationSection("items");
@@ -55,12 +69,33 @@ public class PersonalMenu extends FastInv {
             ItemWrapper wrapper = ItemWrapper.fromData(configuration, path)
                 .setDynamic(getItemExecutor(replacer));
 
+            if (configuration.contains(path + ".display-condition")) {
+                List<String> displayConditionList = configuration.getStringList(path + ".display-condition");
+
+                if (conditions != null) {
+                    if (!conditions.execute(displayConditionList, player)) {
+                        continue;
+                    }
+                }
+            }
+
             if (configuration.contains(path + ".slot")) {
                 TextReplacer finalReplacer = replacer;
                 setItem(
                         configuration.getInt(path + ".slot", 0),
                         wrapper.getDynamicItem(player).getItem(),
                         event -> {
+                            event.setCancelled(true);
+                            if (configuration.contains(path + ".actions-condition")) {
+                                List<String> actionConditionList = configuration.getStringList(path + ".actions-condition");
+
+                                if (conditions != null) {
+                                    if (!conditions.execute(actionConditionList, player)) {
+                                        return;
+                                    }
+                                }
+                            }
+
                             List<String> list = configuration.getStringList(path + ".actions");
 
                             if (list.isEmpty()) {
@@ -83,6 +118,17 @@ public class PersonalMenu extends FastInv {
                         currentSlot,
                         wrapper.getDynamicItem(player).getItem(),
                         event -> {
+                            event.setCancelled(true);
+                            if (configuration.contains(path + ".actions-condition")) {
+                                List<String> actionConditionList = configuration.getStringList(path + ".actions-condition");
+
+                                if (conditions != null) {
+                                    if (!conditions.execute(actionConditionList, player)) {
+                                        return;
+                                    }
+                                }
+                            }
+
                             List<String> list = configuration.getStringList(path + ".actions");
 
                             if (list.isEmpty()) {
