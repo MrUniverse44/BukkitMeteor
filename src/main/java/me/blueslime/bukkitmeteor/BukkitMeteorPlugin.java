@@ -24,13 +24,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.InputStream;
 import java.util.EnumMap;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
 public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLogger {
     private final Map<LoggerType, String> logMap = new EnumMap<>(LoggerType.class);
-    private final Map<Class<?>, Module> moduleMap = new HashMap<>();
+    private final Map<Class<?>, Module> moduleMap = new ConcurrentHashMap<>();
 
     public abstract void onEnable();
 
@@ -121,7 +122,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     private void loadModules() {
-        for (Module module : moduleMap.values()) {
+        for (Module module : new HashSet<>(moduleMap.values())) {
             if (module instanceof Menus || module instanceof Inventories) {
                 continue;
             }
@@ -132,13 +133,13 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     public abstract void registerModules();
 
     public void reload() {
-        for (Module module : moduleMap.values()) {
+        for (Module module : new HashSet<>(moduleMap.values())) {
             module.reload();
         }
     }
 
     public void shutdown() {
-        for (Module module : moduleMap.values()) {
+        for (Module module : new HashSet<>(moduleMap.values())) {
             module.shutdown();
         }
     }
