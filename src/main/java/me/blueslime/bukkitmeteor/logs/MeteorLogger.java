@@ -1,5 +1,7 @@
 package me.blueslime.bukkitmeteor.logs;
 
+import me.blueslime.bukkitmeteor.implementation.Implements;
+
 public interface MeteorLogger {
 
     default void error(String... messages) {
@@ -22,6 +24,20 @@ public interface MeteorLogger {
         }
 
         printException(exception);
+    }
+
+    default void error(Throwable exception) {
+        printThrowable(exception);
+    }
+
+    default void error(Throwable exception, String... messages) {
+        String prefix = getPrefix(LoggerType.ERROR);
+
+        for (String message : messages) {
+            send(prefix + message);
+        }
+
+        printThrowable(exception);
     }
 
     default void warn(String... messages) {
@@ -51,27 +67,40 @@ public interface MeteorLogger {
     void send(String... message);
 
     default void printException(Exception exception) {
+        printLog(exception);
+    }
+
+    default void printThrowable(Throwable throwable) {
+        printLog(throwable);
+    }
+
+    default void printLog(Throwable throwable) {
         String prefix = getPrefix(LoggerType.ERROR);
-        Class<?> current = exception.getClass();
+        Class<?> current = throwable.getClass();
         String location = current.getName();
         String error = current.getSimpleName();
+        String message = throwable.getMessage() != null ? throwable.getMessage() : "No message available";
+
         send(prefix + " -------------------------");
-        send(prefix + "Location: " + location.replace("." + error,""));
+        send(prefix + "Location: " + location.replace("." + error, ""));
         send(prefix + "Error: " + error);
+        send(prefix + "Message: " + message);
 
-        if (exception.getStackTrace() != null) {
-            send(prefix + "StackTrace: ");
+        if (throwable.getCause() != null) {
+            send(prefix + "Cause: " + throwable.getCause().toString());
+        }
 
-            for (StackTraceElement line : exception.getStackTrace()) {
-                String convertedLine = (prefix + " (Line: "
-                        + line.getLineNumber() + ") (Class: " + line.getFileName() + ") (Method: "
-                        + line.getMethodName() + ")")
-                        .replace(".java","");
+        send(prefix + "StackTrace: ");
+        for (StackTraceElement line : throwable.getStackTrace()) {
+            String className = line.getClassName();
+            int lastDotIndex = className.lastIndexOf('.');
+            String packageName = lastDotIndex != -1 ? className.substring(0, lastDotIndex) : "(default package)";
+            String convertedLine = (prefix + " (Line: "
+                    + line.getLineNumber() + ") (Class: " + line.getFileName() + ") (Method: "
+                    + line.getMethodName() + ") (In: " + className + ") (Package: " + packageName + ")")
+                    .replace(".java", "");
 
-                send(
-                        convertedLine
-                );
-            }
+            send(convertedLine);
         }
         send(prefix + " -------------------------");
     }
@@ -81,4 +110,12 @@ public interface MeteorLogger {
     String getPrefix(LoggerType prefix);
 
     void build();
+
+    /**
+     * Gets the logger
+     * @return logger instance
+     */
+    static MeteorLogger fetch() {
+        return Implements.fetch(MeteorLogger.class);
+    }
 }
