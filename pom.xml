@@ -45,6 +45,10 @@
         <configuration>
             <relocations>
                 <relocation>
+                    <pattern>me.blueslime.nmshandlerapi</pattern>
+                    <shadedPattern>me.blueslime.bukkitmeteor.libs.nmshandlerapi</shadedPattern>
+                </relocation>
+                <relocation>
                     <pattern>com.xism4.sternalboard</pattern>
                     <shadedPattern>me.blueslime.bukkitmeteor.libs.sternalboard</shadedPattern>
                 </relocation>
