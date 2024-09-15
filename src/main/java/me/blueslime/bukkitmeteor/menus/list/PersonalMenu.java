@@ -5,6 +5,7 @@ import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.implementation.Implements;
+import me.blueslime.bukkitmeteor.menus.ItemMenu;
 import me.blueslime.bukkitmeteor.utils.PluginUtil;
 import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
 import me.blueslime.utilitiesapi.item.ItemWrapper;
@@ -25,6 +26,23 @@ public class PersonalMenu extends FastInv {
     @SuppressWarnings("unused")
     public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration) {
         this(plugin, player, configuration, TextReplacer.builder());
+    }
+
+    private ItemMenu checkConditions(Conditions conditions, ConfigurationSection configuration, Player player, ItemWrapper original, String path) {
+        if (!configuration.contains(path + ".display-condition")) {
+            return new ItemMenu(original, path);
+        }
+        List<String> displayConditionList = configuration.getStringList(path + ".display-condition");
+
+        if (conditions != null) {
+            if (!conditions.execute(displayConditionList, player)) {
+                if (!configuration.contains(path + ".without-conditions")) {
+                    return new ItemMenu(null, path);
+                }
+                return checkConditions(conditions, configuration, player, null, path + ".without-conditions");
+            }
+        }
+        return new ItemMenu(null, path);
     }
 
     public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration, TextReplacer replacer) {
@@ -68,18 +86,28 @@ public class PersonalMenu extends FastInv {
         for (String key : extra.getKeys(false)) {
             String path = "items." + key;
 
-            ItemWrapper wrapper = ItemWrapper.fromData(configuration, path)
+            ItemWrapper wrapper = ItemWrapper
+                .fromData(configuration, path)
                 .setDynamic(getItemExecutor(replacer));
 
-            if (configuration.contains(path + ".display-condition")) {
-                List<String> displayConditionList = configuration.getStringList(path + ".display-condition");
+            /* We check infinite wrapper checks */
+            ItemMenu menuItem = checkConditions(conditions, configuration, player, wrapper, path);
 
-                if (conditions != null) {
-                    if (!conditions.execute(displayConditionList, player)) {
-                        continue;
-                    }
-                }
+            if (!menuItem.isPresent()) {
+                return;
             }
+
+            wrapper = menuItem.getWrapper();
+
+            if (wrapper == null) {
+                /* Not need to continue because the wrapper don't exist */
+                continue;
+            }
+
+            /* Gets the new menu item path */
+            path = menuItem.getPath();
+
+            final String finalPath = path;
 
             if (configuration.contains(path + ".slot")) {
                 TextReplacer finalReplacer = replacer;
@@ -88,8 +116,8 @@ public class PersonalMenu extends FastInv {
                         wrapper.getDynamicItem(player).getItem(),
                         event -> {
                             event.setCancelled(true);
-                            if (configuration.contains(path + ".actions-condition")) {
-                                List<String> actionConditionList = configuration.getStringList(path + ".actions-condition");
+                            if (configuration.contains(finalPath + ".actions-condition")) {
+                                List<String> actionConditionList = configuration.getStringList(finalPath + ".actions-condition");
 
                                 if (conditions != null) {
                                     if (!conditions.execute(actionConditionList, player)) {
@@ -98,7 +126,7 @@ public class PersonalMenu extends FastInv {
                                 }
                             }
 
-                            List<String> list = configuration.getStringList(path + ".actions");
+                            List<String> list = configuration.getStringList(finalPath + ".actions");
 
                             if (list.isEmpty()) {
                                 return;
@@ -121,8 +149,8 @@ public class PersonalMenu extends FastInv {
                         wrapper.getDynamicItem(player).getItem(),
                         event -> {
                             event.setCancelled(true);
-                            if (configuration.contains(path + ".actions-condition")) {
-                                List<String> actionConditionList = configuration.getStringList(path + ".actions-condition");
+                            if (configuration.contains(finalPath + ".actions-condition")) {
+                                List<String> actionConditionList = configuration.getStringList(finalPath + ".actions-condition");
 
                                 if (conditions != null) {
                                     if (!conditions.execute(actionConditionList, player)) {
@@ -131,7 +159,7 @@ public class PersonalMenu extends FastInv {
                                 }
                             }
 
-                            List<String> list = configuration.getStringList(path + ".actions");
+                            List<String> list = configuration.getStringList(finalPath + ".actions");
 
                             if (list.isEmpty()) {
                                 return;
