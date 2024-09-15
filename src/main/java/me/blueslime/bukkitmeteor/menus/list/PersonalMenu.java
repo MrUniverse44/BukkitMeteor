@@ -121,6 +121,17 @@ public class PersonalMenu extends FastInv {
 
                                 if (conditions != null) {
                                     if (!conditions.execute(actionConditionList, player)) {
+                                        List<String> list = configuration.getStringList(finalPath + ".failed-actions-conditions");
+
+                                        if (list.isEmpty()) {
+                                            return;
+                                        }
+
+                                        actions.execute(
+                                            list,
+                                            player,
+                                            finalReplacer
+                                        );
                                         return;
                                     }
                                 }

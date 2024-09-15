@@ -2,6 +2,7 @@ package me.blueslime.bukkitmeteor;
 
 import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
+import me.blueslime.bukkitmeteor.commands.list.OpenMenuCommand;
 import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.getter.MeteorGetter;
 import me.blueslime.bukkitmeteor.implementation.Implements;
@@ -131,6 +132,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     public abstract void registerModules();
+
+    public void registerOpenMenuCommand() {
+        Implements.createInstance(OpenMenuCommand.class).register();
+    }
 
     public void reload() {
         for (Module module : new HashSet<>(moduleMap.values())) {
