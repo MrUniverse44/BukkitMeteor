@@ -18,10 +18,16 @@ import java.util.Locale;
 public class Menus implements Module {
     private final PluginStorage<String, ConfigurationSection> menuStorage = PluginStorage.initAsConcurrentHash();
     private final BukkitMeteorPlugin plugin;
+    private boolean generateFolder = true;
 
     public Menus(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
         FastInvManager.register(plugin);
+    }
+
+    public Menus disableFolderGeneration() {
+        this.generateFolder = false;
+        return this;
     }
 
     @Override
@@ -34,6 +40,9 @@ public class Menus implements Module {
         );
 
         if (!folder.exists()) {
+            if (!generateFolder) {
+                return;
+            }
             MenusFolderGenerationEvent event = new MenusFolderGenerationEvent(folder);
 
             plugin.getServer().getPluginManager().callEvent(event);

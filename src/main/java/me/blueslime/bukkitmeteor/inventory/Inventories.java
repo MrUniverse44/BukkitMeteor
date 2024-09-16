@@ -16,12 +16,18 @@ import java.util.Locale;
 public class Inventories implements Module {
     private final PluginStorage<String, MeteorInventory> menuStorage = PluginStorage.initAsConcurrentHash();
     private final BukkitMeteorPlugin plugin;
+    private boolean generateFolder = true;
 
     public Inventories(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
         InventoryHandlerAPI.setCustomPrefix("bkt-mtr-");
         InventoryHandlerAPI.setCustomIdentifierPrefix("bkt-ite-");
         InventoryHandlerAPI.register(plugin);
+    }
+
+    public Inventories disableFolder() {
+        generateFolder = false;
+        return this;
     }
 
     @Override
@@ -34,6 +40,9 @@ public class Inventories implements Module {
         );
 
         if (!folder.exists()) {
+            if (!generateFolder) {
+                return;
+            }
             InventoriesFolderGenerationEvent event = new InventoriesFolderGenerationEvent(folder);
 
             plugin.getServer().getPluginManager().callEvent(event);

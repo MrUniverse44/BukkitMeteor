@@ -21,6 +21,10 @@ public class Implements extends AbstractImplementer {
 
     private final Map<RegistrationData, Object> CLASS_MAP = new ConcurrentHashMap<>();
 
+    public Map<RegistrationData, Object> getRegistrationMap() {
+        return CLASS_MAP;
+    }
+
     // Public Methods for Class Operations
     public void unregisterAll(RegistrationData... all) {
         for (RegistrationData datum : all) {

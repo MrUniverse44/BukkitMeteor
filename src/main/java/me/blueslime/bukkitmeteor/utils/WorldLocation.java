@@ -5,6 +5,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.util.NumberConversions;
+import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -115,20 +118,71 @@ public class WorldLocation {
         return floor(z);
     }
 
-    public void add(double x, double y, double z, float yaw, float pitch) {
+    /**
+     * Adds the location by another. Not world-aware.
+     *
+     * @see Vector
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param z Z coordinate
+     * @return the same location instance
+     */
+    public WorldLocation add(double x, double y, double z, float yaw, float pitch) {
         this.x += x;
         this.y += y;
         this.z += z;
         this.yaw += yaw;
         this.pitch += pitch;
+        return this;
     }
 
-    public void remove(double x, double y, double z, float yaw, float pitch) {
+    /**
+     * removes the location by another. Not world-aware.
+     *
+     * @see Vector
+     * @param x X coordinate
+     * @param y Y coordinate
+     * @param z Z coordinate
+     * @return the same location instance
+     */
+    public WorldLocation remove(double x, double y, double z, float yaw, float pitch) {
         this.x -= x;
         this.y -= y;
         this.z -= z;
         this.yaw -= yaw;
         this.pitch -= pitch;
+        return this;
+    }
+
+    /**
+     * Get the distance between this location and another. The value of this
+     * method is not cached and uses a costly square-root function, so do not
+     * repeatedly call this method to get the location's magnitude. NaN will
+     * be returned if the inner result of the sqrt() function overflows, which
+     * will be caused if the distance is too long.
+     *
+     * @param o The other location
+     * @return the distance
+     * @see Vector
+     */
+    public double distance(@NotNull Location o) {
+        return Math.sqrt(distanceSquared(o));
+    }
+
+    /**
+     * Get the squared distance between this location and another.
+     *
+     * @param o The other location
+     * @return the distance
+     * @see Vector
+     */
+    public double distanceSquared(Location o) {
+        if (o == null) {
+            return 0;
+        }
+        return NumberConversions.square(x - o.getX()) +
+               NumberConversions.square(y - o.getY()) +
+               NumberConversions.square(z - o.getZ());
     }
 
     private int floor(double num) {
@@ -136,6 +190,11 @@ public class WorldLocation {
         return floor == num ? floor : floor - (int) (Double.doubleToRawLongBits(num) >>> 63);
     }
 
+    /**
+     * Compare a {@link WorldLocation} with this WorldLocation
+     * @param location to compare
+     * @return check if this is the same location
+     */
     public boolean compareLocations(WorldLocation location) {
         if (world != null) {
             return getBlockX() == location.getBlockX() &&
@@ -146,6 +205,11 @@ public class WorldLocation {
         return getBlockX() == location.getBlockX() && getBlockY() == location.getBlockY() && getBlockZ() == location.getBlockZ();
     }
 
+    /**
+     * Compare a {@link Location} with this WorldLocation
+     * @param location to compare
+     * @return check if this is the same location
+     */
     public boolean compareLocation(Location location) {
         if (world != null) {
             if (location.getWorld() == null) {

@@ -34,9 +34,27 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     private final Map<LoggerType, String> logMap = new EnumMap<>(LoggerType.class);
     private final Map<Class<?>, Module> moduleMap = new ConcurrentHashMap<>();
 
+    /**
+     * Use here the {@link #initialize(Object)} method to load the entire plugin data.
+     * or use {@link #initialize(Object, boolean, boolean)}
+     */
     public abstract void onEnable();
 
+    /**
+     * Initialize the whole plugin
+     * @param instance is the {@link JavaPlugin} instanced class.
+     */
     protected void initialize(Object instance) {
+        initialize(instance, true, true);
+    }
+
+    /**
+     * Initialize the whole plugin
+     * @param instance is the {@link JavaPlugin} instanced class.
+     * @param generateMenusFolder generate menu folder
+     * @param generateInventoryFolder generate inventories folder
+     */
+    protected void initialize(Object instance, boolean generateInventoryFolder, boolean generateMenusFolder) {
         PersistentDataNBT.initialize(this);
         new MeteorGetter(this);
 
@@ -44,17 +62,26 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         new Conditions(this);
         new Scoreboards(this);
 
-        registerOwnModules();
+        registerOwnModules(generateInventoryFolder, generateMenusFolder);
         registerModules();
 
         loadModules();
         loadOwnModules();
     }
 
-    private void registerOwnModules() {
+    /**
+     * Register our own modules like: Menus and Inventories to the {@link #registerModule(Module...)}
+     * @param generateMenusFolder generate menu folder
+     * @param generateInventoryFolder generate inventories folder
+     */
+    private void registerOwnModules(boolean generateMenusFolder, boolean generateInventoryFolder) {
         registerModule(
-            Implements.fetch(Menus.class),
-            Implements.fetch(Inventories.class)
+            !generateMenusFolder ?
+                Implements.fetch(Menus.class).disableFolderGeneration() :
+                Implements.fetch(Menus.class),
+            !generateInventoryFolder ?
+                Implements.fetch(Inventories.class).disableFolder() :
+                Implements.fetch(Inventories.class)
         ).finishOwn();
     }
 
@@ -64,6 +91,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         shutdown();
     }
 
+    /**
+     * @param modules to be registered in the plugin.
+     * @return plugin instance
+     */
     public BukkitMeteorPlugin registerModule(Module... modules) {
         if (modules != null && modules.length >= 1) {
             for (Module module : modules) {
@@ -73,6 +104,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         return this;
     }
 
+    /**
+     * @param modules to be registered in the plugin.
+     * @return plugin instance
+     */
     @SafeVarargs
     public final BukkitMeteorPlugin registerModule(Class<? extends Module>... modules) {
         if (modules != null && modules.length >= 1) {
@@ -109,6 +144,9 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         moduleMap.put(module.getClass(), module);
     }
 
+    /**
+     * Append all registered modules size in the console
+     */
     public void finish() {
         getLogger().info("Registered " + moduleMap.size() + " module(s).");
     }
@@ -131,18 +169,31 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         }
     }
 
+    /**
+     * Here you can use the {@link #registerModule(Module...)} or {@link #registerModule(Class[])}
+     * This method is automatically used internally.
+     */
     public abstract void registerModules();
 
+    /**
+     * Here you can auto register a /open-meteor-menu command if you want.
+     */
     public void registerOpenMenuCommand() {
         Implements.createInstance(OpenMenuCommand.class).register();
     }
 
+    /**
+     * This method reloads all other modules
+     */
     public void reload() {
         for (Module module : new HashSet<>(moduleMap.values())) {
             module.reload();
         }
     }
 
+    /**
+     * This method shutdown all other modules
+     */
     public void shutdown() {
         for (Module module : new HashSet<>(moduleMap.values())) {
             module.shutdown();
@@ -230,11 +281,30 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         // DO NOT NOTHING
     }
 
+
+    /**
+     * This method is actually deprecated
+     * please use {@link Implements#fetch(Class)} or {@link Implements#fetch(Class, String)}
+     * instead of this.
+     * @param module to get
+     * @return module instance
+     * @param <T> type of module
+     */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public <T extends Module> T getModule(Class<T> module) {
-        return (T) moduleMap.get(module);
+        if (moduleMap.containsKey(module)) {
+            return (T) moduleMap.get(module);
+        }
+        return Implements.fetch(module);
     }
 
+    /**
+     * Gets the module map
+     * @return module list
+     * Please use {@link Implements#getRegistrationMap()}
+     */
+    @Deprecated
     public Map<Class<?>, Module> getModules() {
         return moduleMap;
     }
@@ -253,6 +323,11 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         );
     }
 
+    /**
+     * Checks if a plugin is enabled
+     * @param pluginName to check
+     * @return result
+     */
     public boolean isPluginEnabled(String pluginName) {
         return getServer().getPluginManager().isPluginEnabled(pluginName);
     }
