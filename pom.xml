@@ -6,7 +6,7 @@
 
   <groupId>me.blueslime</groupId>
   <artifactId>BukkitMeteor</artifactId>
-  <version>1.8.0</version>
+  <version>1.9.0</version>
   <packaging>jar</packaging>
 
   <name>BukkitMeteor</name>
@@ -69,6 +69,10 @@
                     <pattern>fr.mrmicky.fastinv</pattern>
                     <shadedPattern>me.blueslime.bukkitmeteor.libs.fastinv</shadedPattern>
                 </relocation>
+                <relocation>
+                    <pattern>com.mongodb</pattern>
+                    <shadedPattern>me.blueslime.bukkitmeteor.libs.mongodb</shadedPattern>
+                </relocation>
             </relocations>
 
             <filters>
@@ -112,6 +116,11 @@
           <artifactId>placeholderapi</artifactId>
           <version>2.11.6</version>
           <scope>provided</scope>
+      </dependency>
+      <dependency>
+          <groupId>org.mongodb</groupId>
+          <artifactId>mongodb-driver-sync</artifactId>
+          <version>5.1.4</version>
       </dependency>
       <dependency>
           <groupId>com.github.BlueSlimeDev</groupId>

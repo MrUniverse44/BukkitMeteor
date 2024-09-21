@@ -9,14 +9,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginManager;
 
 public interface AdvancedModule extends PersistentModule, Implementer, Entries {
-    default <T> T fetch(Class<T> clazz) {
-        return Implements.fetch(clazz);
-    }
-
-    default <T> T fetch(Class<T> clazz, String identifier) {
-        return Implements.fetch(clazz, identifier);
-    }
-
     default void registerAll(Listener... listeners) {
         BukkitMeteorPlugin plugin = fetch(BukkitMeteorPlugin.class);
 

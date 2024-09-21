@@ -7,6 +7,27 @@ import java.lang.reflect.Array;
 @SuppressWarnings("unchecked")
 public interface Implementer {
     /**
+     * Calls the {@link Implements#fetch(Class)}
+     * @param clazz to search
+     * @return instance or null
+     * @param <T> instance type
+     */
+    default <T> T fetch(Class<T> clazz) {
+        return Implements.fetch(clazz);
+    }
+
+    /**
+     * Calls the {@link Implements#fetch(Class, String)}
+     * @param clazz to search
+     * @param identifier for this search
+     * @return instance or null
+     * @param <T> instance type
+     */
+    default <T> T fetch(Class<T> clazz, String identifier) {
+        return Implements.fetch(clazz, identifier);
+    }
+
+    /**
      * register implement set, collection, map or list
      * @param type of the set parameter
      * @param values for this set
