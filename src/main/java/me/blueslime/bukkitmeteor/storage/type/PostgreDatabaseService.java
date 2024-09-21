@@ -21,6 +21,7 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
     public PostgreDatabaseService(Connection connection) {
         this.connection = connection;
         registerImpl(StorageDatabase.class, this, true);
+        registerImpl(PostgreDatabaseService.class, this, true);
     }
 
     @Override

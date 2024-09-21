@@ -22,6 +22,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
     public MongoDatabaseService(MongoDatabase database) {
         this.database = database;
         registerImpl(StorageDatabase.class, this, true);
+        registerImpl(MongoDatabaseService.class, this, true);
     }
 
     @Override
