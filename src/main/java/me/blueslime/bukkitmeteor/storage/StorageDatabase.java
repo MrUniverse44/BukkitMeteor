@@ -1,7 +1,10 @@
 package me.blueslime.bukkitmeteor.storage;
 
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -18,6 +21,8 @@ public abstract class StorageDatabase {
     public abstract CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj);
 
     public abstract void saveOrUpdateSync(StorageObject obj);
+
+    public abstract void connect();
 
     public abstract void closeConnection();
 
@@ -54,5 +59,18 @@ public abstract class StorageDatabase {
             return Enum.valueOf((Class<Enum>)clazz, value);
         }
         return value;
+    }
+
+    protected boolean isComplexObject(Class<?> clazz) {
+        if (!clazz.isPrimitive() && !clazz.getName().startsWith("java.lang")) {
+            boolean annotatedFields = Arrays.stream(clazz.getDeclaredFields()).anyMatch(
+                    field -> field.isAnnotationPresent(StorageKey.class)
+            );
+            boolean annotatedConstructor = Arrays.stream(clazz.getDeclaredConstructors()).anyMatch(
+                    constructor -> constructor.isAnnotationPresent(StorageConstructor.class)
+            );
+            return annotatedFields || annotatedConstructor;
+        }
+        return false;
     }
 }

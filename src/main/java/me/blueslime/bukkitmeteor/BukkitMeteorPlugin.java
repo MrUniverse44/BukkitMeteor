@@ -14,6 +14,7 @@ import me.blueslime.bukkitmeteor.logs.LoggerType;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.bukkitmeteor.scoreboards.Scoreboards;
+import me.blueslime.bukkitmeteor.storage.StorageDatabase;
 import me.blueslime.bukkitmeteor.utils.FileUtil;
 import me.blueslime.utilitiesapi.item.nbt.PersistentDataNBT;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
@@ -63,6 +64,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         new Scoreboards(this);
 
         registerOwnModules(generateInventoryFolder, generateMenusFolder);
+        registerDatabases();
         registerModules();
 
         loadModules();
@@ -174,6 +176,20 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
      * This method is automatically used internally.
      */
     public abstract void registerModules();
+
+    /**
+     * Here we register our databases
+     * Here you can use the {@link #registerDatabase(StorageDatabase...)}
+     */
+    public void registerDatabases() {
+
+    }
+
+    public void registerDatabase(StorageDatabase... databases) {
+        for (StorageDatabase database : databases) {
+            database.connect();
+        }
+    }
 
     /**
      * Here you can auto register a /open-meteor-menu command if you want.

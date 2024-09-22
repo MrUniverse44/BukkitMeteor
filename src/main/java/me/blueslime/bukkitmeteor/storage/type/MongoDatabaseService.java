@@ -1,8 +1,13 @@
 package me.blueslime.bukkitmeteor.storage.type;
 
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
+import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
 import me.blueslime.bukkitmeteor.storage.interfaces.*;
@@ -15,14 +20,66 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import static com.mongodb.client.model.Filters.eq;
 
+@SuppressWarnings("unused")
 public class MongoDatabaseService extends StorageDatabase implements AdvancedModule {
 
-    private final MongoDatabase database;
+    private MongoClient mongoClient = null;
+    private MongoDatabase database = null;
 
-    public MongoDatabaseService(MongoDatabase database) {
-        this.database = database;
-        registerImpl(StorageDatabase.class, this, true);
-        registerImpl(MongoDatabaseService.class, this, true);
+    /* Mongo data */
+    private final String databaseName;
+    private final String uri;
+
+    /**
+     * Initialize mongo database connection
+     * @param uri for this connection
+     * @param databaseName for this service
+     * @param register to register this connection to the Implements
+     */
+    public MongoDatabaseService(String uri, String databaseName, boolean register) {
+        this.databaseName = databaseName;
+        this.uri = uri;
+        if (register) {
+            registerImpl(StorageDatabase.class, this, true);
+            registerImpl(MongoDatabaseService.class, this, true);
+        }
+    }
+
+    /**
+     * Initialize mongo database connection
+     * @param uri for this connection
+     * @param databaseName for this service
+     * @param register to register this connection to the Implements
+     * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
+     */
+    public MongoDatabaseService(String uri, String databaseName, boolean register, String identifier) {
+        this.databaseName = databaseName;
+        this.uri = uri;
+        if (register) {
+            registerImpl(StorageDatabase.class, identifier, this, true);
+            registerImpl(MongoDatabaseService.class, identifier, this, true);
+        }
+    }
+
+    public void connect() {
+        MongoClientSettings mongoClientSettings = MongoClientSettings
+            .builder()
+            .applyConnectionString(
+                new ConnectionString(this.uri)
+            ).build();
+
+        this.mongoClient = MongoClients.create(mongoClientSettings);
+        this.database = mongoClient.getDatabase(this.databaseName);
+    }
+
+    public void disconnect() {
+        if (mongoClient != null) {
+            mongoClient.close();
+        }
+    }
+
+    public MongoDatabase getDatabase() {
+        return database;
     }
 
     @Override
@@ -36,6 +93,9 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
     }
 
     private void save(StorageObject obj) {
+        if (database == null) {
+            throw new IllegalStateException("No connection established. Call connect() first.");
+        }
         Class<?> clazz = obj.getClass();
         Document document = new Document();
 
@@ -61,7 +121,12 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
                         value = convertValue(field.getType(), key.defaultValue());
                     }
                 }
-                document.append(name, value);
+                if (isComplexObject(field.getType())) {
+                    Document embeddedDocument = handleComplexObject(value);
+                    document.append(name, embeddedDocument);
+                } else {
+                    document.append(name, value);
+                }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
@@ -76,8 +141,51 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
         }
     }
 
+    private Document handleComplexObject(Object obj) {
+        if (obj == null) {
+            return null;
+        }
+        Class<?> clazz = obj.getClass();
+        Document embeddedDocument = new Document();
+
+        for (Field field : clazz.getDeclaredFields()) {
+            field.setAccessible(true);
+            try {
+                if (field.isAnnotationPresent(StorageIgnore.class)) {
+                    continue;
+                }
+                Object value = field.get(obj);
+
+                String name = field.getName();
+
+                if (field.isAnnotationPresent(StorageKey.class)) {
+                    StorageKey key = field.getAnnotation(StorageKey.class);
+                    if (!key.key().isEmpty()) {
+                        name = key.key();
+                    }
+                    if (value == null && !key.defaultValue().isEmpty()) {
+                        value = convertValue(field.getType(), key.defaultValue());
+                    }
+                }
+                if (isComplexObject(field.getType())) {
+                    Document fieldEmbeddedDocument = handleComplexObject(value);
+                    embeddedDocument.append(name, fieldEmbeddedDocument);
+                } else {
+                    embeddedDocument.append(name, value);
+                }
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return embeddedDocument;
+    }
+
     @Override
     public <T extends StorageObject> CompletableFuture<Optional<T>> loadByIdAsync(Class<T> clazz, String identifier) {
+        if (database == null) {
+            throw new IllegalStateException("No connection established. Call connect() first.");
+        }
         return CompletableFuture.supplyAsync(() -> {
             MongoCollection<Document> collection = database.getCollection(clazz.getSimpleName());
             Document doc = collection.find(eq("_id", identifier)).first();
@@ -91,6 +199,9 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
 
     @Override
     public <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier) {
+        if (database == null) {
+            throw new IllegalStateException("No connection established. Call connect() first.");
+        }
         MongoCollection<Document> collection = database.getCollection(clazz.getSimpleName());
         Document doc = collection.find(eq("_id", identifier)).first();
 
@@ -111,17 +222,20 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
     }
 
     private void delete(Class<?> clazz, String identifier) {
+        if (database == null) {
+            throw new IllegalStateException("No connection established. Call connect() first.");
+        }
         MongoCollection<Document> collection = database.getCollection(clazz.getSimpleName());
         collection.deleteOne(eq("_id", identifier));
     }
 
     @Override
     public void closeConnection() {
-        /* Not needed for mongo. */
+        disconnect();
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends StorageObject> T instantiateObject(Class<T> clazz, Document doc) {
+    private <T extends StorageObject> T instantiateObject(Class<?> clazz, Document doc) {
         try {
             for (Constructor<?> constructor : clazz.getConstructors()) {
                 if (constructor.isAnnotationPresent(StorageConstructor.class)) {
@@ -133,15 +247,24 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
                         String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
                                 ? paramAnnotation.key()
                                 : parameters[i].getName();
-                        values[i] = doc.get(paramName);
+
+                        if (isComplexObject(parameters[i].getType())) {
+                            Document embeddedDoc = (Document) doc.get(paramName);
+                            values[i] = instantiateObject(parameters[i].getType(), embeddedDoc);
+                        } else {
+                            values[i] = doc.get(paramName);
+                        }
+
                         if (values[i] == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {
                             values[i] = convertValue(parameters[i].getType(), paramAnnotation.defaultValue());
                         }
+
                     }
 
                     return (T) constructor.newInstance(values);
                 }
             }
+            return null;
         } catch (Exception e) {
             e.printStackTrace();
         }
