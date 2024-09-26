@@ -191,7 +191,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
             Document doc = collection.find(eq("_id", identifier)).first();
 
             if (doc != null) {
-                return Optional.ofNullable(instantiateObject(clazz, doc));
+                return Optional.ofNullable(instantiateObject(clazz, doc, identifier));
             }
             return Optional.empty();
         });
@@ -206,7 +206,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
         Document doc = collection.find(eq("_id", identifier)).first();
 
         if (doc != null) {
-            return Optional.ofNullable(instantiateObject(clazz, doc));
+            return Optional.ofNullable(instantiateObject(clazz, doc, identifier));
         }
         return Optional.empty();
     }
@@ -235,7 +235,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends StorageObject> T instantiateObject(Class<?> clazz, Document doc) {
+    private <T extends StorageObject> T instantiateObject(Class<?> clazz, Document doc, String identifier) {
         try {
             for (Constructor<?> constructor : clazz.getConstructors()) {
                 if (constructor.isAnnotationPresent(StorageConstructor.class)) {
@@ -250,9 +250,13 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
 
                         if (isComplexObject(parameters[i].getType())) {
                             Document embeddedDoc = (Document) doc.get(paramName);
-                            values[i] = instantiateObject(parameters[i].getType(), embeddedDoc);
+                            values[i] = instantiateObject(parameters[i].getType(), embeddedDoc, identifier);
                         } else {
-                            values[i] = doc.get(paramName);
+                            if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
+                                values[i] = identifier;
+                            } else {
+                                values[i] = doc.get(paramName);
+                            }
                         }
 
                         if (values[i] == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {

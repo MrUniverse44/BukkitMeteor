@@ -261,7 +261,7 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
             ResultSet resultSet = statement.executeQuery();
 
             if (resultSet.next()) {
-                return Optional.ofNullable(instantiateObject(clazz, resultSet));
+                return Optional.ofNullable(instantiateObject(clazz, resultSet, identifier));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -304,7 +304,7 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends StorageObject> T instantiateObject(Class<?> clazz, ResultSet resultSet) {
+    private <T extends StorageObject> T instantiateObject(Class<?> clazz, ResultSet resultSet, String identifier) {
         try {
             for (Constructor<?> constructor : clazz.getConstructors()) {
                 if (constructor.isAnnotationPresent(StorageConstructor.class)) {
@@ -320,9 +320,13 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
                         Object paramValue;
 
                         if (isComplexObject(parameters[i].getType())) {
-                            paramValue = instantiateComplexObject(parameters[i].getType(), resultSet);
+                            paramValue = instantiateComplexObject(parameters[i].getType(), resultSet, identifier);
                         } else {
-                            paramValue = resultSet.getObject(paramName);
+                            if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
+                                paramValue = identifier;
+                            } else {
+                                paramValue = resultSet.getObject(paramName);
+                            }
                         }
 
                         if (paramValue == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {
@@ -341,9 +345,9 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
         return null;
     }
 
-    private Object instantiateComplexObject(Class<?> complexType, ResultSet resultSet) {
+    private Object instantiateComplexObject(Class<?> complexType, ResultSet resultSet, String identifier) {
         try {
-            return instantiateObject(complexType, resultSet);  // Llamada recursiva para manejar objetos complejos
+            return instantiateObject(complexType, resultSet, identifier);  // Llamada recursiva para manejar objetos complejos
         } catch (Exception e) {
             e.printStackTrace();
             return null;
