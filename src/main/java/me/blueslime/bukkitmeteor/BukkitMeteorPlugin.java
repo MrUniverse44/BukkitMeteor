@@ -36,8 +36,8 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     private final Map<Class<?>, Module> moduleMap = new ConcurrentHashMap<>();
 
     /**
-     * Use here the {@link #initialize(Object)} method to load the entire plugin data.
-     * or use {@link #initialize(Object, boolean, boolean)}
+     * Use here the {@link BukkitMeteorPlugin#initialize(Object)} method to load the entire plugin data.
+     * or use {@link BukkitMeteorPlugin#initialize(Object, boolean, boolean)}
      */
     public abstract void onEnable();
 
@@ -72,7 +72,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     /**
-     * Register our own modules like: Menus and Inventories to the {@link #registerModule(Module...)}
+     * Register our own modules like: Menus and Inventories to the {@link BukkitMeteorPlugin#registerModule(Module...)}
      * @param generateMenusFolder generate menu folder
      * @param generateInventoryFolder generate inventories folder
      */
@@ -179,7 +179,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
 
     /**
      * Here we register our databases
-     * Here you can use the {@link #registerDatabase(StorageDatabase...)}
+     * Here you can use the {@link BukkitMeteorPlugin#registerDatabase(StorageDatabase...)}
      */
     public void registerDatabases() {
 

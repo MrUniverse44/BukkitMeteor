@@ -23,6 +23,11 @@ public class MeteorGetter implements Module {
         return plugin.load(new File(plugin.getDataFolder(), "settings.yml"), "settings.yml");
     }
 
+    @Register(identifier = "folder")
+    public File provideFolder() {
+        return plugin.getDataFolder();
+    }
+
     @Register
     public Menus provideMenus() {
         return new Menus(plugin);

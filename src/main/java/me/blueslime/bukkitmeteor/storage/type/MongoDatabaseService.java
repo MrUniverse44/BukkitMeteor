@@ -36,12 +36,20 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
      * @param databaseName for this service
      * @param register to register this connection to the Implements
      */
-    public MongoDatabaseService(String uri, String databaseName, boolean register) {
+    public MongoDatabaseService(String uri, String databaseName, RegistrationType register) {
         this.databaseName = databaseName;
         this.uri = uri;
-        if (register) {
-            registerImpl(StorageDatabase.class, this, true);
+
+        if (register == null) {
+            register = RegistrationType.DONT_REGISTER;
+        }
+
+        if (register.isDouble() || register.isOnlyThis()) {
             registerImpl(MongoDatabaseService.class, this, true);
+        }
+
+        if (register.isDouble()) {
+            registerImpl(StorageDatabase.class, this, true);
         }
     }
 
@@ -52,12 +60,30 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
      * @param register to register this connection to the Implements
      * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
      */
-    public MongoDatabaseService(String uri, String databaseName, boolean register, String identifier) {
+    public MongoDatabaseService(String uri, String databaseName, RegistrationType register, String identifier) {
         this.databaseName = databaseName;
         this.uri = uri;
-        if (register) {
-            registerImpl(StorageDatabase.class, identifier, this, true);
-            registerImpl(MongoDatabaseService.class, identifier, this, true);
+
+        boolean isSet = identifier != null;
+
+        if (register == null) {
+            register = RegistrationType.DONT_REGISTER;
+        }
+
+        if (register.isDouble() || register.isOnlyThis()) {
+            if (isSet) {
+                registerImpl(MongoDatabaseService.class, identifier, this, true);
+            } else {
+                registerImpl(MongoDatabaseService.class, this, true);
+            }
+        }
+
+        if (register.isDouble()) {
+            if (isSet) {
+                registerImpl(StorageDatabase.class, identifier, this, true);
+            } else {
+                registerImpl(StorageDatabase.class, this, true);
+            }
         }
     }
 

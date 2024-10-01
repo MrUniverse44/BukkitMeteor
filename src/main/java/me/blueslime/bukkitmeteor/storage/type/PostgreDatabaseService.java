@@ -27,13 +27,21 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
      * @param password password
      * @param register to register this connection to the Implements
      */
-    public PostgreDatabaseService(String url, String user, String password, boolean register) {
+    public PostgreDatabaseService(String url, String user, String password, RegistrationType register) {
         this.password = password;
         this.user = user;
         this.url = url;
-        if (register) {
-            registerImpl(StorageDatabase.class, this, true);
+
+        if (register == null) {
+            register = RegistrationType.DONT_REGISTER;
+        }
+
+        if (register.isDouble() || register.isOnlyThis()) {
             registerImpl(PostgreDatabaseService.class, this, true);
+        }
+
+        if (register.isDouble()) {
+            registerImpl(StorageDatabase.class, this, true);
         }
     }
 
@@ -45,13 +53,31 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
      * @param register to register this connection to the Implements
      * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
      */
-    public PostgreDatabaseService(String url, String user, String password, boolean register, String identifier) {
+    public PostgreDatabaseService(String url, String user, String password, RegistrationType register, String identifier) {
         this.password = password;
         this.user = user;
         this.url = url;
-        if (register) {
-            registerImpl(StorageDatabase.class, identifier, this, true);
-            registerImpl(PostgreDatabaseService.class, identifier, this, true);
+
+        boolean isSet = identifier != null;
+
+        if (register == null) {
+            register = RegistrationType.DONT_REGISTER;
+        }
+
+        if (register.isDouble() || register.isOnlyThis()) {
+            if (isSet) {
+                registerImpl(PostgreDatabaseService.class, identifier, this, true);
+            } else {
+                registerImpl(PostgreDatabaseService.class, this, true);
+            }
+        }
+
+        if (register.isDouble()) {
+            if (isSet) {
+                registerImpl(StorageDatabase.class, identifier, this, true);
+            } else {
+                registerImpl(StorageDatabase.class, this, true);
+            }
         }
     }
 

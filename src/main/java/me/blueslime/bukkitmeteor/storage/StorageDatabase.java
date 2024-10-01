@@ -4,6 +4,8 @@ import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -54,6 +56,12 @@ public abstract class StorageDatabase {
         }
         if (clazz == Character.class || clazz == char.class) {
             return value.charAt(0);
+        }
+        if (clazz == BigInteger.class) {
+            return new BigInteger(value);
+        }
+        if (clazz == BigDecimal.class) {
+            return new BigDecimal(value);
         }
         if (clazz.isEnum()) {
             return Enum.valueOf((Class<Enum>)clazz, value);
