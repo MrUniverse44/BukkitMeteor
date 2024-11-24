@@ -38,6 +38,11 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
         super(Implements.fetch(BukkitMeteorPlugin.class), command, description, usageMessage, Collections.unmodifiableList(aliases));
     }
 
+    @Override
+    public boolean overwriteCommand() {
+        return true;
+    }
+
     public InjectedCommand() {
         super(Implements.fetch(BukkitMeteorPlugin.class));
     }
