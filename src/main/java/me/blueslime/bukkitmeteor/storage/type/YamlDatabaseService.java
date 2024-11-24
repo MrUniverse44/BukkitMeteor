@@ -251,6 +251,39 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
         }
     }
 
+    private <T extends StorageObject> Set<T> loadAll(Class<T> clazz) {
+        File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
+        Set<T> set = new HashSet<>();
+        if (!file.exists()) {
+            return set;
+        }
+
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        for (String key : config.getKeys(false)) {
+            ConfigurationSection section = config.getConfigurationSection(key);
+            if (section != null) {
+                T object = instantiateObject(clazz, section, key);
+                if (object != null) {
+                    set.add(object);
+                }
+            }
+        }
+
+        return set;
+    }
+
+
+    @Override
+    public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
+        return CompletableFuture.supplyAsync(() -> loadAll(clazz));
+    }
+
+    @Override
+    public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
+        return loadAll(clazz);
+    }
+
     public <T extends StorageObject> void delete(Class<T> clazz, String identifier) {
         File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
         if (file.exists()) {

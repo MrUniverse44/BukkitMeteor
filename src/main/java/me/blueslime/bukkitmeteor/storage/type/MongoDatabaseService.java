@@ -16,7 +16,9 @@ import org.bson.Document;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import static com.mongodb.client.model.Filters.eq;
 
@@ -245,6 +247,33 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
     @Override
     public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
         delete(clazz, identifier);
+    }
+
+    @Override
+    public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
+        return CompletableFuture.supplyAsync(
+            () -> loadAllSync(clazz)
+        );
+    }
+
+    @Override
+    public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
+        Set<T> set = new HashSet<>();
+
+        if (database == null) {
+            throw new IllegalStateException("No connection established. Call connect() first.");
+        }
+
+        MongoCollection<Document> collection = database.getCollection(clazz.getSimpleName());
+
+        for (Document doc : collection.find()) {
+            T object = instantiateObject(clazz, doc, doc.getString("_id"));
+            if (object != null) {
+                set.add(object);
+            }
+        }
+
+        return set;
     }
 
     private void delete(Class<?> clazz, String identifier) {

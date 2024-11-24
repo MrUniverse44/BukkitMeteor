@@ -9,7 +9,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.sql.*;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("unused")
@@ -305,6 +307,42 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
      public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
         delete(clazz, identifier);
      }
+
+     private <T extends StorageObject> Set<T> loadAll(Class<T> clazz) {
+         if (connection == null) {
+             throw new IllegalStateException("No connection established. Call connect() first.");
+         }
+         String tableName = clazz.getSimpleName();
+         String query = "SELECT * FROM " + tableName;
+
+         Set<T> results = new HashSet<>();
+         try (PreparedStatement statement = connection.prepareStatement(query)) {
+             ResultSet resultSet = statement.executeQuery();
+
+             while (resultSet.next()) {
+                 T object = instantiateObject(clazz, resultSet, resultSet.getString("id"));
+                 if (object != null) {
+                     results.add(object);
+                 }
+             }
+         } catch (SQLException e) {
+             e.printStackTrace();
+         }
+
+         return results;
+     }
+
+    @Override
+    public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
+        return CompletableFuture.supplyAsync(
+            () -> loadAll(clazz)
+        );
+    }
+
+    @Override
+    public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
+        return loadAll(clazz);
+    }
 
     private void delete(Class<?> clazz, String identifier) {
         String tableName = clazz.getSimpleName();

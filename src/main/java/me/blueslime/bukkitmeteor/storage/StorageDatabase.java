@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 public abstract class StorageDatabase {
@@ -19,6 +20,10 @@ public abstract class StorageDatabase {
     public abstract <T extends StorageObject> CompletableFuture<Void> deleteByIdAsync(Class<T> clazz, String identifier);
 
     public abstract <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier);
+
+    public abstract <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz);
+
+    public abstract <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz);
 
     public abstract CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj);
 
