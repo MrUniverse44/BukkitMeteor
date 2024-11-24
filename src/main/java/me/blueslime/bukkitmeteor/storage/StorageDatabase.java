@@ -6,10 +6,10 @@ import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class StorageDatabase {
 
@@ -61,6 +61,27 @@ public abstract class StorageDatabase {
         }
         if (clazz == Character.class || clazz == char.class) {
             return value.charAt(0);
+        }
+        if (clazz == List.class || clazz == ArrayList.class) {
+            return new ArrayList<>();
+        }
+        if (clazz == Set.class || clazz == HashSet.class) {
+            return new HashSet<>();
+        }
+        if (clazz == LinkedList.class) {
+            return new LinkedList<>();
+        }
+        if (clazz == Vector.class) {
+            return new Vector();
+        }
+        if (clazz == ConcurrentHashMap.class) {
+            return new ConcurrentHashMap<>();
+        }
+        if (clazz == CopyOnWriteArrayList.class) {
+            return new CopyOnWriteArrayList<>();
+        }
+        if (clazz == Map.class || clazz == HashMap.class) {
+            return new HashMap<>();
         }
         if (clazz == BigInteger.class) {
             return new BigInteger(value);
