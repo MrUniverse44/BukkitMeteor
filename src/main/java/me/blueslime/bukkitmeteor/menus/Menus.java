@@ -122,11 +122,11 @@ public class Menus implements Module {
             plugin.getLogs().error("Invalid null menu or player keys for openMenu");
             return null;
         }
-        ConfigurationSection configuration =  menuStorage.get(
+        ConfigurationSection configuration = menuStorage.get(
             key.toLowerCase(Locale.ENGLISH)
         );
         if (configuration == null) {
-            plugin.getLogs().error("Can't find menu key: " + key + " for: " + player.getName());
+            plugin.getLogs().error("Can't find menu key: '" + key + "' for: " + player.getName());
             return null;
         }
         return new PersonalMenu(

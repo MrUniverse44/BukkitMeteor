@@ -39,7 +39,7 @@ public class PersonalMenu extends FastInv {
                 if (!configuration.contains(path + ".without-conditions")) {
                     return new ItemMenu(null, path);
                 }
-                return checkConditions(conditions, configuration, player, null, path + ".without-conditions");
+                return checkConditions(conditions, configuration, player, ItemWrapper.fromData(configuration, path + ".without-conditions"), path + ".without-conditions");
             }
         }
         return new ItemMenu(null, path);
