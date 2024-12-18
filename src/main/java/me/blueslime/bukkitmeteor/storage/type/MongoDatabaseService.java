@@ -9,6 +9,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
+import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
 import me.blueslime.bukkitmeteor.storage.interfaces.*;
 import org.bson.Document;
@@ -16,9 +17,7 @@ import org.bson.Document;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import static com.mongodb.client.model.Filters.eq;
 
@@ -156,7 +155,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
                     document.append(name, value);
                 }
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                fetch(MeteorLogger.class).error(e, "Can't save StorageObject");
             }
         }
 
@@ -202,7 +201,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
                     embeddedDocument.append(name, value);
                 }
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                fetch(MeteorLogger.class).error(e, "Can't handle Complex Storage Object");
             }
         }
 
@@ -291,17 +290,17 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
 
     @SuppressWarnings("unchecked")
     private <T extends StorageObject> T instantiateObject(Class<?> clazz, Document doc, String identifier) {
-        try {
-            for (Constructor<?> constructor : clazz.getConstructors()) {
-                if (constructor.isAnnotationPresent(StorageConstructor.class)) {
+        for (Constructor<?> constructor : clazz.getConstructors()) {
+            if (constructor.isAnnotationPresent(StorageConstructor.class)) {
+                try {
                     Parameter[] parameters = constructor.getParameters();
                     Object[] values = new Object[parameters.length];
 
                     for (int i = 0; i < parameters.length; i++) {
                         StorageKey paramAnnotation = parameters[i].getAnnotation(StorageKey.class);
                         String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
-                                ? paramAnnotation.key()
-                                : parameters[i].getName();
+                            ? paramAnnotation.key()
+                            : parameters[i].getName();
 
                         if (isComplexObject(parameters[i].getType())) {
                             Document embeddedDoc = (Document) doc.get(paramName);
@@ -318,14 +317,45 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
                             values[i] = convertValue(parameters[i].getType(), paramAnnotation.defaultValue());
                         }
 
+                        if (values[i] != null && List.class.isAssignableFrom(values[i].getClass())) {
+                            if (Set.class.isAssignableFrom(parameters[i].getType())) {
+                                Class<?> setType = parameters[i].getType();
+                                List<?> list = (List<?>) values[i];
+                                if (HashSet.class.isAssignableFrom(setType)) {
+                                    values[i] = new HashSet<>(list);
+                                } else if (LinkedHashSet.class.isAssignableFrom(setType)) {
+                                    values[i] = new LinkedHashSet<>(list);
+                                } else if (TreeSet.class.isAssignableFrom(setType)) {
+                                    values[i] = new TreeSet<>(list);
+                                } else {
+                                    try {
+                                        if (setType.equals(Set.class)) {
+                                            values[i] = new HashSet<>(list);
+                                        } else {
+                                            Set<Object> newSet = (Set<Object>) setType.getDeclaredConstructor().newInstance();
+                                            newSet.addAll(list);
+                                            values[i] = newSet;
+                                        }
+                                    } catch (Exception e) {
+                                        fetch(MeteorLogger.class).error(e, "Can't create a set instance of class: " + setType.getSimpleName() + ", please use another subclass of Set<> or other Collection method");
+                                    }
+                                }
+                            }
+                        }
+
                     }
 
                     return (T) constructor.newInstance(values);
+                } catch (Exception e) {
+                    fetch(MeteorLogger.class).error(
+                        e,
+                        "Can't initialize instance of "
+                        + clazz.getSimpleName()
+                        + " because the constructors parameters are not the same"
+                        + " or it seems to have a problem, now searching and trying with other constructor"
+                    );
                 }
             }
-            return null;
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         return null;
     }
