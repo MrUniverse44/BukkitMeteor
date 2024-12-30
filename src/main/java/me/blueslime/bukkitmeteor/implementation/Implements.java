@@ -204,7 +204,11 @@ public class Implements extends AbstractImplementer {
             }
 
             if (implement == EmptyImplement.INVOKE) {
-                return (T) createInstance(data.getInstance());
+                result = createInstance(data.getInstance());
+
+                CLASS_MAP.put(data, result);
+
+                return (T) result;
             }
             return null;
         }
