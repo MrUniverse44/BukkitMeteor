@@ -49,4 +49,9 @@ public class PlaySoundAction extends Action {
             player -> player.playSound(player.getLocation(), sound, volume, pitch)
         );
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true;
+    }
 }

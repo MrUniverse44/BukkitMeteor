@@ -92,5 +92,9 @@ public abstract class Action {
         }
         return false;
     }
+
+    public boolean requiresMainThread() {
+        return false;
+    }
 }
 

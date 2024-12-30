@@ -33,4 +33,9 @@ public class ConsoleAction extends Action {
             );
         }
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true;
+    }
 }

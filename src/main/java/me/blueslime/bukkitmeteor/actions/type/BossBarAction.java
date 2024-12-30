@@ -52,4 +52,9 @@ public class BossBarAction extends Action {
             BOSS_BAR.send(player, TextUtilities.colorize(message), percentage);
         }
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true;
+    }
 }

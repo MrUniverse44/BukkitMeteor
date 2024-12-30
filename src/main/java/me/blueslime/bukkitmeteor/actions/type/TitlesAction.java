@@ -46,5 +46,10 @@ public class TitlesAction extends Action {
             MESSAGES.send(player, TextUtilities.colorize(message));
         }
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true;
+    }
 }
 

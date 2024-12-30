@@ -1,71 +1,71 @@
 package me.blueslime.bukkitmeteor.conditions.condition;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
+import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Set;
 
-public abstract class Condition {
+public abstract class Condition implements AdvancedModule {
 
-    private final List<String> prefixes = new ArrayList<>();
-
-    public Condition(String prefix, String... extraPrefixes) {
-        this.prefixes.addAll(Arrays.asList(extraPrefixes));
-        this.prefixes.add(prefix);
-    }
+    private final Set<String> prefixes = new HashSet<>();
 
     /**
-     * Execute condition
-     *
-     * @param plugin    of the event
-     * @param player    player of this condition
-     * @param parameter text
-     * @return boolean true if the condition has been overpassed, false if not.
+     * Create a new condition
+     * @param prefix main prefix
+     * @param extraPrefixes optional prefixes
      */
+    public Condition(String prefix, String... extraPrefixes) {
+        prefixes.add(prefix.toLowerCase(Locale.ENGLISH));
+        for (String extra : extraPrefixes) {
+            prefixes.add(extra.toLowerCase(Locale.ENGLISH));
+        }
+    }
+
     public boolean execute(BukkitMeteorPlugin plugin, String parameter, Player player) {
         return execute(plugin, parameter, player, TextReplacer.builder());
     }
 
     /**
-     * Execute condition
+     * Execute action
      *
      * @param plugin    of the event
-     * @param player    player of this condition
      * @param parameter text
+     * @param player    player of this condition
      * @param replacer  if you have texts with custom variables, here you can replace variables in the parameter.
      * @return boolean true if the condition has been overpassed, false if not.
      */
     public abstract boolean execute(BukkitMeteorPlugin plugin, String parameter, Player player, TextReplacer replacer);
 
+    /**
+     * Remove the prefix from the entered parameter
+     * @param parameter to remove the prefix
+     * @return converted parameter
+     */
     public String replace(String parameter) {
+        if (parameter == null) return "";
         for (String prefix : prefixes) {
-            parameter = parameter.replace(" " + prefix + " ", "").replace(" " + prefix, "").replace(prefix + " ", "").replace(prefix, "");
+            parameter = parameter.replaceAll("\\b" + prefix + "\\b", "").trim();
         }
         return parameter;
     }
 
+    /**
+     * Check if this parameter is a condition
+     * @param parameter to check
+     * @return result
+     */
     public boolean isCondition(String parameter) {
-        if (parameter == null) {
-            return false;
-        }
-        String param = parameter.toLowerCase(Locale.ENGLISH);
-        for (String prefix : prefixes) {
-            if (param.startsWith(" " + prefix.toLowerCase(Locale.ENGLISH)) || param.startsWith(prefix.toLowerCase(Locale.ENGLISH))) {
-                return true;
-            }
-        }
-        return false;
+        if (parameter == null || parameter.isBlank()) return false;
+        String param = parameter.toLowerCase(Locale.ENGLISH).trim();
+        return prefixes.stream().anyMatch(param::startsWith);
     }
 
-    /**
-     * Prefixes of your actions
-     * @return the list of your prefixes
-     */
-    public List<String> getPrefixes() {
-        return prefixes;
+    public Set<String> getPrefixes() {
+        return Collections.unmodifiableSet(prefixes);
     }
 }

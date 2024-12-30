@@ -1,6 +1,7 @@
 package me.blueslime.bukkitmeteor.implementation;
 
 import me.blueslime.bukkitmeteor.implementation.factory.ImplementFactory;
+import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
 
 import java.lang.reflect.Array;
 
@@ -76,6 +77,14 @@ public interface Implementer {
      */
     default <T> T registerImpl(Class<T> clazz, String identifier, T newValue) {
         return Implements.setEntry(clazz, identifier, newValue);
+    }
+
+    /**
+     * Unregister an implement
+     * @param data to unregister
+     */
+    default void unregisterImpl(RegistrationData data) {
+        Implements.unregister(data);
     }
 
     /**

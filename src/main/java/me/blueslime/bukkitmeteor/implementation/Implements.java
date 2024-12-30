@@ -1,5 +1,6 @@
 package me.blueslime.bukkitmeteor.implementation;
 
+import me.blueslime.bukkitmeteor.builder.impls.EmptyImplement;
 import me.blueslime.bukkitmeteor.implementation.abstracts.AbstractImplementer;
 import me.blueslime.bukkitmeteor.implementation.data.Implement;
 import me.blueslime.bukkitmeteor.implementation.error.IllegalMethodRegistration;
@@ -194,12 +195,32 @@ public class Implements extends AbstractImplementer {
         return (T) result;
     }
 
+    @SuppressWarnings("unchecked")
+    public <T> T fetchClass(RegistrationData data, EmptyImplement implement) {
+        Object result = CLASS_MAP.get(data);
+        if (result == null) {
+            if (data.getInstance() == EmptyImplement.class) {
+                CLASS_MAP.put(RegistrationData.fromData(EmptyImplement.class), EmptyImplement.INVOKE);
+            }
+
+            if (implement == EmptyImplement.INVOKE) {
+                return (T) createInstance(data.getInstance());
+            }
+            return null;
+        }
+        return (T) result;
+    }
+
     public <T> T fetchClass(Class<T> clazz) {
         return fetchClass(RegistrationData.fromData(clazz));
     }
 
-    public <T> T fetchClass(Class<T> clazz, String identifier) {
-        return fetchClass(RegistrationData.fromData(clazz, identifier));
+    public <T> T fetchClass(Class<T> clazz, EmptyImplement implement) {
+        return fetchClass(RegistrationData.fromData(clazz), implement);
+    }
+
+    public <T> T fetchClass(Class<T> clazz, String identifier, EmptyImplement implement) {
+        return fetchClass(RegistrationData.fromData(clazz, identifier), implement);
     }
 
     @SuppressWarnings("unchecked")

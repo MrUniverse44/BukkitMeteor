@@ -48,6 +48,11 @@ public class ActionBarAction extends Action {
             ACTION_BAR.send(player, TextUtilities.colorize(message));
         }
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true;
+    }
 }
 
 

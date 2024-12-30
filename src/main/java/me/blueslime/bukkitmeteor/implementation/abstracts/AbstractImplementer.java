@@ -1,5 +1,6 @@
 package me.blueslime.bukkitmeteor.implementation.abstracts;
 
+import me.blueslime.bukkitmeteor.builder.impls.EmptyImplement;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
@@ -28,11 +29,11 @@ public abstract class AbstractImplementer {
     }
 
     public static <T> T fetch(Class<T> clazz) {
-        return inst().fetchClass(clazz);
+        return inst().fetchClass(clazz, fetch(EmptyImplement.class));
     }
 
     public static <T> T fetch(Class<T> clazz, String identifier) {
-        return inst().fetchClass(clazz, identifier);
+        return inst().fetchClass(clazz, identifier, fetch(EmptyImplement.class));
     }
 
     public static <T> T setEntry(Class<T> clazz, T newValue) {

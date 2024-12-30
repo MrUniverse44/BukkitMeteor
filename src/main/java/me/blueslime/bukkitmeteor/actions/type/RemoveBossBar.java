@@ -26,4 +26,9 @@ public class RemoveBossBar extends Action {
             handler.remove(player);
         }
     }
+
+    @Override
+    public boolean requiresMainThread() {
+        return true;
+    }
 }

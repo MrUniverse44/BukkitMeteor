@@ -1,10 +1,13 @@
 package me.blueslime.bukkitmeteor;
 
 import me.blueslime.bukkitmeteor.actions.Actions;
+import me.blueslime.bukkitmeteor.builder.PluginBuilder;
+import me.blueslime.bukkitmeteor.builder.impls.EmptyImplement;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
 import me.blueslime.bukkitmeteor.commands.list.OpenMenuCommand;
 import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.getter.MeteorGetter;
+import me.blueslime.bukkitmeteor.implementation.Implementer;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.module.RegisteredModule;
@@ -31,13 +34,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
-public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLogger {
+public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLogger, Implementer {
     private final Map<LoggerType, String> logMap = new EnumMap<>(LoggerType.class);
     private final Map<Class<?>, Module> moduleMap = new ConcurrentHashMap<>();
+    private EmptyImplement implement = EmptyImplement.NULL;
 
     /**
      * Use here the {@link BukkitMeteorPlugin#initialize(Object)} method to load the entire plugin data.
-     * or use {@link BukkitMeteorPlugin#initialize(Object, boolean, boolean)}
+     * or use {@link BukkitMeteorPlugin#initialize(Object, PluginBuilder)}
      */
     public abstract void onEnable();
 
@@ -46,16 +50,16 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
      * @param instance is the {@link JavaPlugin} instanced class.
      */
     protected void initialize(Object instance) {
-        initialize(instance, true, true);
+        initialize(instance, PluginBuilder.builder());
     }
 
     /**
      * Initialize the whole plugin
      * @param instance is the {@link JavaPlugin} instanced class.
-     * @param generateMenusFolder generate menu folder
-     * @param generateInventoryFolder generate inventories folder
+     * @param generateInventoryFolder inventories
+     * @param generateMenuFolder menus
      */
-    protected void initialize(Object instance, boolean generateInventoryFolder, boolean generateMenusFolder) {
+    protected void initialize(Object instance, boolean generateInventoryFolder, boolean generateMenuFolder) {
         PersistentDataNBT.initialize(this);
         new MeteorGetter(this);
 
@@ -63,7 +67,32 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         new Conditions(this);
         new Scoreboards(this);
 
-        registerOwnModules(generateInventoryFolder, generateMenusFolder);
+        registerOwnModules(
+            PluginBuilder.builder()
+                .generateInventories(generateInventoryFolder)
+                .generateMenus(generateMenuFolder)
+        );
+        registerDatabases();
+        registerModules();
+
+        loadModules();
+        loadOwnModules();
+    }
+
+    /**
+     * Initialize the whole plugin
+     * @param instance is the {@link JavaPlugin} instanced class.
+     * @param builder Plugin Builder Setup
+     */
+    protected void initialize(Object instance, PluginBuilder builder) {
+        PersistentDataNBT.initialize(this);
+        new MeteorGetter(this);
+
+        new Actions(this);
+        new Conditions(this);
+        new Scoreboards(this);
+
+        registerOwnModules(builder);
         registerDatabases();
         registerModules();
 
@@ -73,23 +102,24 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
 
     /**
      * Register our own modules like: Menus and Inventories to the {@link BukkitMeteorPlugin#registerModule(Module...)}
-     * @param generateMenusFolder generate menu folder
-     * @param generateInventoryFolder generate inventories folder
+     * @param builder Plugin Builder Setup
      */
-    private void registerOwnModules(boolean generateMenusFolder, boolean generateInventoryFolder) {
+    private void registerOwnModules(PluginBuilder builder) {
+        this.implement = builder.getImplement();
+        registerImpl(EmptyImplement.class, implement, true);
         registerModule(
-            !generateMenusFolder ?
-                Implements.fetch(Menus.class).disableFolderGeneration() :
-                Implements.fetch(Menus.class),
-            !generateInventoryFolder ?
-                Implements.fetch(Inventories.class).disableFolder() :
-                Implements.fetch(Inventories.class)
+            !builder.isMenus() ?
+                fetch(Menus.class).disableFolderGeneration() :
+                fetch(Menus.class),
+            !builder.isInventories() ?
+                fetch(Inventories.class).disableFolder() :
+                fetch(Inventories.class)
         ).finishOwn();
     }
 
     @Override
     public void onDisable() {
-        Implements.unregister(RegistrationData.fromData(Scoreboards.class));
+        unregisterImpl(RegistrationData.fromData(Scoreboards.class));
         shutdown();
     }
 
@@ -114,7 +144,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     public final BukkitMeteorPlugin registerModule(Class<? extends Module>... modules) {
         if (modules != null && modules.length >= 1) {
             for (Class<? extends Module> moduleClass : modules) {
-                Module module = Implements.createInstance(moduleClass);
+                Module module = createInstance(moduleClass);
                 fetchDataEntries(module);
             }
         }
@@ -125,8 +155,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         if (module == null) {
             return;
         }
-        if (module instanceof RegisteredModule) {
-            RegisteredModule registeredModule = (RegisteredModule) module;
+        if (module instanceof RegisteredModule registeredModule) {
             if (registeredModule.hasIdentifier()) {
                 if (registeredModule.getIdentifier().isEmpty()) {
                     Implements.addRegistrationData(
@@ -158,8 +187,8 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     private void loadOwnModules() {
-        Implements.fetch(Menus.class).initialize();
-        Implements.fetch(Inventories.class).initialize();
+        fetch(Menus.class).initialize();
+        fetch(Inventories.class).initialize();
     }
 
     private void loadModules() {
@@ -323,6 +352,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     @Deprecated
     public Map<Class<?>, Module> getModules() {
         return moduleMap;
+    }
+
+    public EmptyImplement getImplement() {
+        return implement;
     }
 
     @Override

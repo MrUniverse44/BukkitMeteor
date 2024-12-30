@@ -6,20 +6,27 @@ import me.blueslime.bukkitmeteor.actions.type.*;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
-import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class Actions implements AdvancedModule {
-    private final List<Action> externalActions = new ReturnableArrayList<Action>();
-    private final List<Action> action = new ReturnableArrayList<Action>();
+    private final List<Action> internalActions;
+    private final List<Action> externalActions;
     private final BukkitMeteorPlugin plugin;
+    private final ExecutorService executor;
 
     public Actions(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
+        this.internalActions = new ArrayList<>();
+        this.externalActions = new ArrayList<>();
+
+        // Initialize thread pool with a fixed size
+        this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
+
+        // Register default internal actions
         registerInternalAction(
             new MessageAction(),
             new ActionBarAction(),
@@ -29,42 +36,44 @@ public class Actions implements AdvancedModule {
             new CloseMenuAction(),
             new InventoryAction(),
             new PlaySoundAction(),
-            new MenuAction()
+            new MenuAction(),
+            new RemoveBossBar(),
+            new BossBarAction()
         );
+
         Implements.register(this);
     }
 
     /**
-     * Register actions to the plugin
-     * These actions will not be refreshed in a reload event.
+     * Register internal actions (not affected by reload)
      * @param actions to register
      */
     public void registerInternalAction(Action... actions) {
-        action.addAll(Arrays.asList(actions));
+        Collections.addAll(this.internalActions, actions);
     }
 
     /**
-     * Register actions to the plugin
+     * Register external actions
      * @param actions to register
      */
     public void registerAction(Action... actions) {
-        externalActions.addAll(Arrays.asList(actions));
+        Collections.addAll(this.externalActions, actions);
     }
 
     /**
      * Get the list of internal actions
-     * @return ArrayList
+     * @return List<Action>
      */
     public List<Action> getActions() {
-        return action;
+        return Collections.unmodifiableList(this.internalActions);
     }
 
     /**
      * Get the list of external actions
-     * @return ArrayList
+     * @return List<Action>
      */
     public List<Action> getExternalActions() {
-        return externalActions;
+        return Collections.unmodifiableList(this.externalActions);
     }
 
     public void execute(List<String> actions) {
@@ -72,45 +81,61 @@ public class Actions implements AdvancedModule {
     }
 
     public void execute(List<String> actions, Player player) {
-        List<Action> entireList = new ReturnableArrayList<Action>();
+        if (player == null || actions == null || actions.isEmpty()) {
+            return;
+        }
 
-        entireList.addAll(externalActions);
-        entireList.addAll(action);
-
+        List<Action> combinedActions = getCombinedActions();
         for (String param : actions) {
-            if (fetch(entireList, player, param)) {
+            if (executeAction(combinedActions, player, param)) {
                 break;
             }
         }
     }
 
     public void execute(List<String> actions, Player player, TextReplacer replacer) {
-        List<Action> entireList = new ReturnableArrayList<Action>();
-
-        entireList.addAll(externalActions);
-        entireList.addAll(action);
-
-        for (String param : actions) {
-            if (fetch(entireList, player, replacer.apply(param))) {
-                break;
-            }
+        if (player == null || actions == null || actions.isEmpty() || replacer == null) {
+            return;
         }
+
+        executor.submit(() -> {
+            List<Action> combinedActions = getCombinedActions();
+            for (String param : actions) {
+                String replacedParam = replacer.apply(param);
+                if (executeAction(combinedActions, player, replacedParam)) {
+                    break;
+                }
+            }
+        });
     }
 
-    private boolean fetch(List<Action> list, Player player, String param) {
-        if (player == null) {
-            return false;
-        }
-        for (Action action : list) {
-            if (action.isAction(param)) {
-                if (action.canExecute(plugin, player, param)) {
+    private boolean executeAction(List<Action> actions, Player player, String param) {
+        for (Action action : actions) {
+            if (action.isAction(param) && action.canExecute(plugin, player, param)) {
+                if (action.requiresMainThread()) {
+                    plugin.getServer().getScheduler().runTask(plugin, () -> action.execute(plugin, param, player));
+                } else {
                     action.execute(plugin, param, player);
                 }
                 return action.isStoppingUpcomingActions(plugin, param, player);
             }
         }
-        plugin.getLogger().info("'" + param + "' don't have an action, please see actions with /<command> actions");
+
+        plugin.getLogger().info(() -> "'" + param + "' doesn't match any action. Use /<command> actions to see available actions.");
         return false;
+    }
+
+    private List<Action> getCombinedActions() {
+        if (externalActions.isEmpty()) {
+            return internalActions;
+        }
+        if (internalActions.isEmpty()) {
+            return externalActions;
+        }
+        return new ArrayList<>(internalActions.size() + externalActions.size()) {{
+            addAll(internalActions);
+            addAll(externalActions);
+        }};
     }
 
     @Register

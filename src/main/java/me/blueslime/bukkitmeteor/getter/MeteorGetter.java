@@ -44,7 +44,7 @@ public class MeteorGetter implements Module {
     }
 
     @Register
-    public MeteorLogger getLogs() {
+    public MeteorLogger provideLogs() {
         return plugin;
     }
 
