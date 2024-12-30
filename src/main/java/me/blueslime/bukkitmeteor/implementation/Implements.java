@@ -190,6 +190,10 @@ public class Implements extends AbstractImplementer {
     public <T> T fetchClass(RegistrationData data) {
         Object result = CLASS_MAP.get(data);
         if (result == null) {
+            if (data.getInstance() == EmptyImplement.class) {
+                CLASS_MAP.put(RegistrationData.fromData(EmptyImplement.class), EmptyImplement.INVOKE);
+                return (T) EmptyImplement.INVOKE;
+            }
             return null;
         }
         return (T) result;

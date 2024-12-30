@@ -29,11 +29,11 @@ public abstract class AbstractImplementer {
     }
 
     public static <T> T fetch(Class<T> clazz) {
-        return inst().fetchClass(clazz, fetch(EmptyImplement.class));
+        return inst().fetchClass(clazz, inst().fetchClass(EmptyImplement.class));
     }
 
     public static <T> T fetch(Class<T> clazz, String identifier) {
-        return inst().fetchClass(clazz, identifier, fetch(EmptyImplement.class));
+        return inst().fetchClass(clazz, identifier, inst().fetchClass(EmptyImplement.class));
     }
 
     public static <T> T setEntry(Class<T> clazz, T newValue) {
