@@ -1,6 +1,8 @@
 package me.blueslime.bukkitmeteor.commands;
 
 import me.blueslime.bukkitmeteor.commands.advanced.CommandSender;
+import me.blueslime.bukkitmeteor.commands.advanced.NotNullArgument;
+import me.blueslime.bukkitmeteor.commands.advanced.NullableArgument;
 import me.blueslime.bukkitmeteor.commands.function.CommandFunction;
 import me.blueslime.bukkitmeteor.commands.issues.CommandArgumentNotFoundException;
 import me.blueslime.bukkitmeteor.commands.issues.CommandWrongSenderException;
@@ -83,6 +85,7 @@ public class CommandBuilder implements AdvancedModule {
 
         for (int i = 0; i < args.length; i++) {
             Class<?> paramType = parameters[i].getType();
+            Parameter param = parameters[i];
 
             if (paramType.equals(sender.getClass())) {
                 parsedArgs[i] = sender;
@@ -111,7 +114,19 @@ public class CommandBuilder implements AdvancedModule {
                 throw new IllegalArgumentException("No converter registered for type: " + paramType.getName());
             }
 
-            parsedArgs[i] = converter.apply(args[i]);
+            try {
+                parsedArgs[i] = converter.apply(args[i]);
+            } catch (Exception e) {
+                if (e instanceof CommandArgumentNotFoundException exception) {
+                    if (param.isAnnotationPresent(NotNullArgument.class)) {
+                        throw exception;
+                    } else if (param.isAnnotationPresent(NullableArgument.class)) {
+                        parsedArgs[i] = null;
+                    }
+                } else {
+                    throw new CommandArgumentNotFoundException(paramType);
+                }
+            }
         }
 
         return parsedArgs;
@@ -123,21 +138,21 @@ public class CommandBuilder implements AdvancedModule {
         Class<?> paramType = parameter.getType();
 
         if (paramType.equals(sender.getClass())) {
-            result = sender;
+            return sender;
         }
 
         if (parameter.isAnnotationPresent(CommandSender.class)) {
             if (paramType.equals(org.bukkit.command.CommandSender.class)) {
-                result = sender.toCommandSender();
+                return sender.toCommandSender();
             }
             if (paramType.equals(Player.class)) {
                 if (sender.isPlayer()) {
-                    result = sender.toPlayer();
+                    return sender.toPlayer();
                 }
                 throw new CommandWrongSenderException(true);
             } else if (paramType.equals(ConsoleCommandSender.class)) {
                 if (sender.isConsole()) {
-                    result = sender.toConsole();
+                    return sender.toConsole();
                 }
                 throw new CommandWrongSenderException(false);
             }
