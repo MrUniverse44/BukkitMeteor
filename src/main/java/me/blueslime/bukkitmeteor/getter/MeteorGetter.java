@@ -1,7 +1,7 @@
 package me.blueslime.bukkitmeteor.getter;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
-import me.blueslime.bukkitmeteor.implementation.module.Module;
+import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.inventory.Inventories;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
@@ -10,7 +10,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
 
-public class MeteorGetter implements Module {
+public class MeteorGetter implements AdvancedModule {
     private final BukkitMeteorPlugin plugin;
 
     public MeteorGetter(BukkitMeteorPlugin plugin) {
@@ -31,11 +31,6 @@ public class MeteorGetter implements Module {
     @Register
     public Menus provideMenus() {
         return new Menus(plugin);
-    }
-
-    @Override
-    public boolean isPersistent() {
-        return true;
     }
 
     @Register

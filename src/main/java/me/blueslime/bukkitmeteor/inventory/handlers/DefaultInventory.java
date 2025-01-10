@@ -5,6 +5,7 @@ import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.inventory.inventory.MeteorInventory;
+import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
 import me.blueslime.inventoryhandlerapi.inventory.CustomInventory;
 import me.blueslime.inventoryhandlerapi.inventory.CustomInventoryBuilder;
 import me.blueslime.inventoryhandlerapi.item.action.InventoryItemAction;
@@ -27,6 +28,10 @@ public class DefaultInventory extends MeteorInventory {
 
     @Override
     public void load() {
+
+        ReturnableArrayList list;
+
+        list.addValues()
         ConfigurationSection configuration = getConfiguration();
 
         inventory = CustomInventoryBuilder.builder(getFile().getName(), true).build();
