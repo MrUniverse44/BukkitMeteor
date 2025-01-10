@@ -52,16 +52,28 @@ public class CommandBuilder implements AdvancedModule {
         Implements.register(this);
     }
 
-
+    /**
+     * Register commands for the plugin
+     * @param commands to register
+     */
+    public CommandBuilder register(InjectedCommand... commands) {
+        for (InjectedCommand command : commands) {
+            command.register();
+        }
+        return this;
+    }
 
     /**
      * Register commands for the plugin
      * @param commands to register
      */
-    public void register(InjectedCommand... commands) {
-        for (InjectedCommand command : commands) {
-            command.register();
+    @SafeVarargs
+    public final CommandBuilder register(Class<? extends InjectedCommand>... commands) {
+        for (Class<? extends InjectedCommand> command : commands) {
+            InjectedCommand injectedCommand = createInstance(command);
+            injectedCommand.register();
         }
+        return this;
     }
 
     public <T> CommandBuilder registerConverter(Class<T> type, CommandFunction<String, T> converter) {

@@ -4,6 +4,7 @@ import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.builder.PluginBuilder;
 import me.blueslime.bukkitmeteor.builder.impls.EmptyImplement;
 import me.blueslime.bukkitmeteor.colors.TextUtilities;
+import me.blueslime.bukkitmeteor.commands.CommandBuilder;
 import me.blueslime.bukkitmeteor.commands.list.OpenMenuCommand;
 import me.blueslime.bukkitmeteor.conditions.Conditions;
 import me.blueslime.bukkitmeteor.getter.MeteorGetter;
@@ -149,6 +150,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
             }
         }
         return this;
+    }
+
+    public CommandBuilder getCommands() {
+        return fetch(CommandBuilder.class);
     }
 
     private void fetchDataEntries(Module module) {

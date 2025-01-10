@@ -1,6 +1,7 @@
 package me.blueslime.bukkitmeteor.getter;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
+import me.blueslime.bukkitmeteor.commands.CommandBuilder;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.inventory.Inventories;
@@ -21,6 +22,11 @@ public class MeteorGetter implements AdvancedModule {
     @Register(identifier = "settings.yml")
     public FileConfiguration provideSettings() {
         return plugin.load(new File(plugin.getDataFolder(), "settings.yml"), "settings.yml");
+    }
+
+    @Register
+    public CommandBuilder provideCommandBuilder() {
+        return new CommandBuilder();
     }
 
     @Register(identifier = "folder")
