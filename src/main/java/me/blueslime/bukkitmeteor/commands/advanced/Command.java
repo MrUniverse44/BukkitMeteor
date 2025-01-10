@@ -1,21 +1,38 @@
 package me.blueslime.bukkitmeteor.commands.advanced;
 
+import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.commands.CommandBuilder;
 import me.blueslime.bukkitmeteor.commands.InjectedCommand;
 import me.blueslime.bukkitmeteor.commands.issues.CommandArgumentNotFoundException;
+import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.utilitiesapi.commands.sender.Sender;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
+import org.bukkit.configuration.file.FileConfiguration;
 
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @SuppressWarnings("unused")
 public abstract class Command extends InjectedCommand {
 
     private final Set<SubCommandHandler> subCommandHandlers = new HashSet<>();
+
+    public Command(String command) {
+        super(command);
+    }
+
+    public Command(String command, List<String> aliases) {
+        super(command, aliases);
+    }
+
+    public Command(FileConfiguration configuration, String commandPath, String aliasesPath) {
+        super(configuration, commandPath, aliasesPath);
+    }
+
+    public Command(String command, String description, String usageMessage, List<String> aliases) {
+        super(command, description, usageMessage, aliases);
+    }
 
     @SafeVarargs
     public final void registerSubCommandHandler(Class<? extends SubCommandHandler>... subCommandHandlers) {
