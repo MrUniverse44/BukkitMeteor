@@ -3,6 +3,7 @@ package me.blueslime.bukkitmeteor.storage;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -61,6 +62,9 @@ public abstract class StorageDatabase {
         }
         if (clazz == Character.class || clazz == char.class) {
             return value.charAt(0);
+        }
+        if (clazz == OptimizedList.class) {
+            return new OptimizedList<>();
         }
         if (clazz == List.class || clazz == ArrayList.class) {
             return new ArrayList<>();
