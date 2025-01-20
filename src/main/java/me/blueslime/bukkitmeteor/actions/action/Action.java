@@ -1,16 +1,14 @@
 package me.blueslime.bukkitmeteor.actions.action;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 public abstract class Action {
 
-    private final List<String> prefixes = new ArrayList<>();
+    private final Set<String> prefixes = new HashSet<>();
 
     private boolean stop = false;
 
@@ -27,7 +25,7 @@ public abstract class Action {
      * @param parameter text
      */
     public void execute(BukkitMeteorPlugin plugin, String parameter, Player... players) {
-        execute(plugin, parameter, Arrays.asList(players));
+        execute(plugin, parameter, new OptimizedList<>(players));
     }
 
     /**
@@ -41,7 +39,15 @@ public abstract class Action {
 
     public String replace(String parameter) {
         for (String prefix : prefixes) {
-            parameter = parameter.replace(" " + prefix + " ", "").replace(" " + prefix, "").replace(prefix + " ", "").replace(prefix, "");
+            parameter = parameter
+                .replace(" " + prefix + " ", "")
+                .replace(" " + prefix, "")
+                .replace(prefix + " ", "")
+                    .replace(prefix, "");
+
+            // It's impossible to do not replace variable.
+            String regex = "(?i)" + prefix.replace("<", "<\\u00A7?.*?");
+            parameter = parameter.replaceAll(regex + "\\s?", "");
         }
         return parameter;
     }
@@ -61,9 +67,9 @@ public abstract class Action {
 
     /**
      * Prefixes of your actions
-     * @return the list of your prefixes
+     * @return the set of your prefixes
      */
-    public List<String> getPrefixes() {
+    public Set<String> getPrefixes() {
         return prefixes;
     }
 

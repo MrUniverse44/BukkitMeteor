@@ -1,6 +1,7 @@
 package me.blueslime.bukkitmeteor.implementation.factory;
 
 import me.blueslime.bukkitmeteor.implementation.Implementer;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -42,7 +43,7 @@ public class ImplementFactory<T, V extends T> implements Implementer {
      * @return registered list in the Implements
      */
     public List<T> asList() {
-        return asList(new ArrayList<>());
+        return asList(new OptimizedList<>());
     }
 
     /**

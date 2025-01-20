@@ -6,6 +6,7 @@ import me.blueslime.bukkitmeteor.actions.type.*;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
@@ -13,15 +14,13 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class Actions implements AdvancedModule {
-    private final List<Action> internalActions;
-    private final List<Action> externalActions;
+    private final List<Action> internalActions = new OptimizedList<>();
+    private final List<Action> externalActions = new OptimizedList<>();
     private final BukkitMeteorPlugin plugin;
     private final ExecutorService executor;
 
     public Actions(BukkitMeteorPlugin plugin) {
         this.plugin = plugin;
-        this.internalActions = new ArrayList<>();
-        this.externalActions = new ArrayList<>();
 
         // Initialize thread pool with a fixed size
         this.executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
@@ -132,10 +131,7 @@ public class Actions implements AdvancedModule {
         if (internalActions.isEmpty()) {
             return externalActions;
         }
-        return new ArrayList<>(internalActions.size() + externalActions.size()) {{
-            addAll(internalActions);
-            addAll(externalActions);
-        }};
+        return OptimizedList.create(Action.class).addElements(internalActions, externalActions);
     }
 
     @Register

@@ -3,10 +3,10 @@ package me.blueslime.bukkitmeteor.commands;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import me.blueslime.utilitiesapi.commands.AdvancedCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,7 +30,7 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
             "/<command> <args>",
             configuration != null ?
                 Collections.unmodifiableList(configuration.getStringList(aliasesPath)) :
-                Collections.unmodifiableList(new ArrayList<>())
+                Collections.unmodifiableList(new OptimizedList<>())
         );
     }
 

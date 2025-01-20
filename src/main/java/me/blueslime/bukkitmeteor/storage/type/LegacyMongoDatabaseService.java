@@ -22,7 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import static com.mongodb.client.model.Filters.eq;
 
 @SuppressWarnings("unused")
-public class MongoDatabaseService extends StorageDatabase implements AdvancedModule {
+@Deprecated
+public class LegacyMongoDatabaseService extends StorageDatabase implements AdvancedModule {
 
     private MongoClient mongoClient = null;
     private MongoDatabase database = null;
@@ -37,7 +38,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
      * @param databaseName for this service
      * @param register to register this connection to the Implements
      */
-    public MongoDatabaseService(String uri, String databaseName, RegistrationType register) {
+    public LegacyMongoDatabaseService(String uri, String databaseName, RegistrationType register) {
         this.databaseName = databaseName;
         this.uri = uri;
 
@@ -46,7 +47,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
         }
 
         if (register.isDouble() || register.isOnlyThis()) {
-            registerImpl(MongoDatabaseService.class, this, true);
+            registerImpl(LegacyMongoDatabaseService.class, this, true);
         }
 
         if (register.isDouble()) {
@@ -61,7 +62,7 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
      * @param register to register this connection to the Implements
      * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
      */
-    public MongoDatabaseService(String uri, String databaseName, RegistrationType register, String identifier) {
+    public LegacyMongoDatabaseService(String uri, String databaseName, RegistrationType register, String identifier) {
         this.databaseName = databaseName;
         this.uri = uri;
 
@@ -73,9 +74,9 @@ public class MongoDatabaseService extends StorageDatabase implements AdvancedMod
 
         if (register.isDouble() || register.isOnlyThis()) {
             if (isSet) {
-                registerImpl(MongoDatabaseService.class, identifier, this, true);
+                registerImpl(LegacyMongoDatabaseService.class, identifier, this, true);
             } else {
-                registerImpl(MongoDatabaseService.class, this, true);
+                registerImpl(LegacyMongoDatabaseService.class, this, true);
             }
         }
 

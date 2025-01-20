@@ -4,6 +4,7 @@ import com.xism4.sternalboard.SternalBoard;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import me.blueslime.utilitiesapi.text.TextUtilities;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -97,7 +98,7 @@ public class Scoreboards {
     }
 
     public List<String> getScoreboardLines(List<String> lineList, Player player, TextReplacer replacer) {
-        List<String> lines = new ArrayList<>();
+        List<String> lines = new OptimizedList<>();
         StringBuilder white = new StringBuilder("&f");
 
         for (String line : lineList) {

@@ -7,31 +7,71 @@ import java.util.concurrent.locks.*;
 import java.util.function.*;
 import java.util.stream.*;
 
-/**
- * OptimizedList: A self-balancing tree-based list implementation.
- * Optimized for memory usage, performance, and concurrency.
- */
 @SuppressWarnings("unused")
 public class OptimizedList<E> extends AbstractList<E> {
 
     // Root node of the tree
-    private volatile CompactNode<E> root;
+    private CompactNode<E> root;
 
     // Size of the tree (number of elements)
-    private volatile int size = 0;
+    private int size = 0;
 
     // Lock for thread safety
     private final StampedLock lock = new StampedLock();
 
+    /**
+     * Default constructor for OptimizedList.
+     */
     public OptimizedList() {
 
     }
 
+    /**
+     * Constructs an OptimizedList containing the elements of the specified collection.
+     *
+     * @param collection the collection whose elements are to be placed into this list.
+     */
+    public OptimizedList(final Collection<E> collection) {
+        addAll(collection);
+    }
+
+    /**
+     * Constructs an OptimizedList containing the elements of the specified list.
+     *
+     * @param list the list whose elements are to be placed into this list.
+     */
     public OptimizedList(final List<E> list) {
         addAll(list);
     }
 
+    /**
+     * Constructs an OptimizedList containing the specified elements.
+     *
+     * @param elements the elements to be placed into this list.
+     */
+    @SafeVarargs
+    public OptimizedList(final E... elements) {
+        addAllOf(elements);
+    }
+
+    /**
+     * Creates an empty OptimizedList.
+     *
+     * @param <E> the type of elements in the list.
+     * @return a new empty OptimizedList.
+     */
     public static <E> OptimizedList<E> create() {
+        return new OptimizedList<>();
+    }
+
+    /**
+     * Creates an empty OptimizedList for a specific class type.
+     *
+     * @param <E> the type of elements in the list.
+     * @param clazz the class type.
+     * @return a new empty OptimizedList.
+     */
+    public static <E> OptimizedList<E> create(Class<E> clazz) {
         return new OptimizedList<>();
     }
 
@@ -51,25 +91,99 @@ public class OptimizedList<E> extends AbstractList<E> {
         }
     }
 
+    /**
+     * Adds an element to the list.
+     *
+     * @param element the element to add.
+     * @return the current OptimizedList instance.
+     */
     public OptimizedList<E> addElement(final E element) {
         add(element);
         return this;
     }
 
+    /**
+     * Adds all elements from a list to the current list.
+     *
+     * @param elements the list of elements to add.
+     * @return the current OptimizedList instance.
+     */
     public OptimizedList<E> addElements(final List<E> elements) {
         addAll(elements);
         return this;
     }
 
+    /**
+     * Adds all elements from multiple collections to the current list.
+     *
+     * @param collections the collections of elements to add.
+     * @return the current OptimizedList instance.
+     */
     @SafeVarargs
-    public final OptimizedList<E> addElements(E... elements) {
-        if (elements == null) {
-            return this;
+    public final OptimizedList<E> addElements(Collection<E>... collections) {
+        if (collections != null) {
+            for (Collection<E> collection : collections) {
+                addAll(collection);
+            }
         }
-        addAll(Arrays.asList(elements));
         return this;
     }
 
+    /**
+     * Sorts the list using the specified comparator.
+     *
+     * @param comparator the comparator to determine the order of the list.
+     * @return the current OptimizedList instance.
+     */
+    public OptimizedList<E> sorting(final Comparator<? super E> comparator) {
+        sort(comparator);
+        return this;
+    }
+
+    /**
+     * Sorts the list in place using the specified comparator.
+     *
+     * @param comparator the comparator to determine the order of the list.
+     */
+    @Override
+    public void sort(Comparator<? super E> comparator) {
+        Objects.requireNonNull(comparator, "Comparator must not be null");
+
+        long stamp = lock.writeLock();
+        try {
+            List<E> elements = new ArrayList<>(size);
+            inOrderTraversal(root, elements::add);
+
+            elements.sort(comparator);
+
+            root = null;
+            size = 0;
+            for (E element : elements) {
+                add(size, element);
+            }
+        } finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+
+    /**
+     * Adds all specified elements to the list.
+     *
+     * @param elements the elements to add.
+     * @return the current OptimizedList instance.
+     */
+    @SafeVarargs
+    public final OptimizedList<E> addElements(E... elements) {
+        addAllOf(elements);
+        return this;
+    }
+
+    /**
+     * Retrieves the element at the specified index.
+     *
+     * @param index the index of the element to retrieve.
+     * @return the element at the specified index.
+     */
     @Override
     public E get(int index) {
         long stamp = lock.tryOptimisticRead();
@@ -93,6 +207,11 @@ public class OptimizedList<E> extends AbstractList<E> {
         return node.value;
     }
 
+    /**
+     * Returns the number of elements in the list.
+     *
+     * @return the size of the list.
+     */
     @Override
     public int size() {
         long stamp = lock.tryOptimisticRead();
@@ -108,6 +227,12 @@ public class OptimizedList<E> extends AbstractList<E> {
         return currentSize;
     }
 
+    /**
+     * Adds an element at the specified position in the list.
+     *
+     * @param index the index at which the element is to be inserted.
+     * @param element the element to insert.
+     */
     @Override
     public void add(int index, E element) {
         long stamp = lock.writeLock();
@@ -122,6 +247,12 @@ public class OptimizedList<E> extends AbstractList<E> {
         }
     }
 
+    /**
+     * Removes the element at the specified position in the list.
+     *
+     * @param index the index of the element to remove.
+     * @return the removed element.
+     */
     @Override
     public E remove(int index) {
         long stamp = lock.writeLock();
@@ -136,8 +267,14 @@ public class OptimizedList<E> extends AbstractList<E> {
         }
     }
 
+    /**
+     * Adds all elements from a collection to the list.
+     *
+     * @param c the collection containing elements to add.
+     * @return true if the list changed as a result of the operation.
+     */
     @Override
-    public boolean addAll(Collection<? extends E> c) {
+    public boolean addAll(@NotNull Collection<? extends E> c) {
         Objects.requireNonNull(c);
         long stamp = lock.writeLock();
         try {
@@ -151,17 +288,29 @@ public class OptimizedList<E> extends AbstractList<E> {
     }
 
     /**
-     * Ensures the index is within bounds
+     * Adds all specified elements to the list.
+     *
+     * @param elements the elements to add.
      */
+    @SafeVarargs
+    public final void addAllOf(@NotNull E... elements) {
+        Objects.requireNonNull(elements);
+        long stamp = lock.writeLock();
+        try {
+            for (E element : elements) {
+                add(size, element);
+            }
+        } finally {
+            lock.unlockWrite(stamp);
+        }
+    }
+
     private void checkIndex(int index) {
         if (index < 0 || index >= size) {
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
         }
     }
 
-    /**
-     * Retrieves the node at a specific index
-     */
     private CompactNode<E> getNode(CompactNode<E> node, int index) {
         int leftSize = size(node.children[0]);
         if (index < leftSize) {
@@ -173,9 +322,6 @@ public class OptimizedList<E> extends AbstractList<E> {
         }
     }
 
-    /**
-     * Inserts an element at a specific index
-     */
     private CompactNode<E> insert(CompactNode<E> node, int index, E value) {
         if (node == null) {
             return new CompactNode<>(value);
@@ -189,9 +335,6 @@ public class OptimizedList<E> extends AbstractList<E> {
         return rebalance(node);
     }
 
-    /**
-     * Removes the element at a specific index
-     */
     private CompactNode<E> remove(CompactNode<E> node, int index, CompactNode<E> removed) {
         int leftSize = size(node.children[0]);
         if (index < leftSize) {
@@ -211,9 +354,6 @@ public class OptimizedList<E> extends AbstractList<E> {
         return rebalance(node);
     }
 
-    /**
-     * Finds the minimum node in a subtree
-     */
     private CompactNode<E> findMin(CompactNode<E> node) {
         while (node.children[0] != null) {
             node = node.children[0];
@@ -221,9 +361,6 @@ public class OptimizedList<E> extends AbstractList<E> {
         return node;
     }
 
-    /**
-     * Balances the tree at the given node
-     */
     private CompactNode<E> rebalance(CompactNode<E> node) {
         update(node);
         int balance = getBalance(node);
@@ -242,9 +379,6 @@ public class OptimizedList<E> extends AbstractList<E> {
         return node;
     }
 
-    /**
-     * Performs a left rotation
-     */
     private CompactNode<E> rotateLeft(CompactNode<E> node) {
         CompactNode<E> newRoot = node.children[1];
         node.children[1] = newRoot.children[0];
@@ -254,9 +388,6 @@ public class OptimizedList<E> extends AbstractList<E> {
         return newRoot;
     }
 
-    /**
-     * Performs a right rotation
-     */
     private CompactNode<E> rotateRight(CompactNode<E> node) {
         CompactNode<E> newRoot = node.children[0];
         node.children[0] = newRoot.children[1];
@@ -266,30 +397,18 @@ public class OptimizedList<E> extends AbstractList<E> {
         return newRoot;
     }
 
-    /**
-     * Updates the height of a node
-     */
     private void update(CompactNode<E> node) {
         node.height = (byte) (1 + Math.max(height(node.children[0]), height(node.children[1])));
     }
 
-    /**
-     * Calculates the balance factor of a node
-     */
     private int getBalance(CompactNode<E> node) {
         return height(node.children[0]) - height(node.children[1]);
     }
 
-    /**
-     * Returns the height of a node
-     */
     private int height(CompactNode<E> node) {
         return (node == null) ? 0 : node.height;
     }
 
-    /**
-     * Returns the size of a node
-     */
     private int size(CompactNode<E> node) {
         if (node == null) {
             return 0;
@@ -300,8 +419,11 @@ public class OptimizedList<E> extends AbstractList<E> {
     }
 
     /**
-     * Streams support for functional operations
+     * Returns a sequential stream with the elements of this list.
+     *
+     * @return a stream with the elements of this list.
      */
+    @Override
     public Stream<E> stream() {
         long stamp = lock.readLock();
         try {
@@ -313,12 +435,24 @@ public class OptimizedList<E> extends AbstractList<E> {
         }
     }
 
+    /**
+     * Performs the given action for each element of the list.
+     *
+     * @param action the action to be performed for each element.
+     */
+    @Override
     @SuppressWarnings("SimplifyStreamApiCallChains")
     public void forEach(Consumer<? super E> action) {
         Objects.requireNonNull(action);
         stream().forEach(action);
     }
 
+    /**
+     * Maps the elements of the list using the specified function.
+     *
+     * @param mapper the function to apply to each element.
+     * @return a new OptimizedList with the mapped elements.
+     */
     public OptimizedList<E> map(Function<? super E, ? extends E> mapper) {
         Objects.requireNonNull(mapper);
         OptimizedList<E> mappedList = new OptimizedList<>();
@@ -326,6 +460,31 @@ public class OptimizedList<E> extends AbstractList<E> {
         return mappedList;
     }
 
+    /**
+     * Searches for an element in the list that matches the given predicate.
+     * This method is thread-safe and leverages the stream() method of the list.
+     *
+     * @param predicate the condition to match elements against
+     * @return an Optional containing the found element or empty if no element matches
+     */
+    public Optional<E> find(Predicate<? super E> predicate) {
+        Objects.requireNonNull(predicate, "Predicate must not be null");
+
+        long stamp = lock.readLock();
+        try {
+            return stream().filter(predicate).findFirst();
+        } finally {
+            lock.unlockRead(stamp);
+        }
+    }
+
+
+    /**
+     * Filters the elements of the list using the specified predicate.
+     *
+     * @param predicate the predicate to apply to each element.
+     * @return a new OptimizedList with the filtered elements.
+     */
     public OptimizedList<E> filter(Predicate<? super E> predicate) {
         Objects.requireNonNull(predicate);
         OptimizedList<E> filteredList = new OptimizedList<>();
@@ -337,6 +496,12 @@ public class OptimizedList<E> extends AbstractList<E> {
         return filteredList;
     }
 
+    /**
+     * Reduces the elements of the list using the specified accumulator.
+     *
+     * @param accumulator the function to combine the elements.
+     * @return an Optional containing the result of the reduction.
+     */
     public Optional<E> reduce(BinaryOperator<E> accumulator) {
         Objects.requireNonNull(accumulator);
         return stream().reduce(accumulator);
@@ -351,6 +516,11 @@ public class OptimizedList<E> extends AbstractList<E> {
         inOrderTraversal(node.children[1], action);
     }
 
+    /**
+     * Returns an iterator over the elements in this list in proper sequence.
+     *
+     * @return an iterator over the elements in this list.
+     */
     @Override
     public @NotNull Iterator<E> iterator() {
         return new Iterator<>() {

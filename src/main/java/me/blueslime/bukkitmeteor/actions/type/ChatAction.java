@@ -2,10 +2,10 @@ package me.blueslime.bukkitmeteor.actions.type;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,7 +32,7 @@ public class ChatAction extends Action {
 
         if (parameter.contains("%for:")) {
             // well... this message will be sent for other(s) players.
-            playerNames = new ArrayList<>();
+            playerNames = new OptimizedList<>();
 
             String regex = "%for:(.*?)%";
 

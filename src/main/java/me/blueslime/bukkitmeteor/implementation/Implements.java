@@ -9,10 +9,10 @@ import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegisteredModuleInstance;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
+import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 
 import java.lang.reflect.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +42,7 @@ public class Implements extends AbstractImplementer {
             return;
         }
 
-        List<RegistrationData> dataList = new ArrayList<>(CLASS_MAP.keySet());
+        List<RegistrationData> dataList = new OptimizedList<>(CLASS_MAP.keySet());
         dataList.removeIf(data -> data.getParentModule() != null && data.getParentModule().equals(module));
         dataList.forEach(CLASS_MAP::remove);
     }
