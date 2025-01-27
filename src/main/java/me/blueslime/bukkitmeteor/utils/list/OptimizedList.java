@@ -110,7 +110,7 @@ public class OptimizedList<E> extends AbstractList<E> implements Implementer {
         if (isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(getFirst());
+        return Optional.of(get(0));
     }
 
     public Optional<E> find(Predicate<E> predicate) {
