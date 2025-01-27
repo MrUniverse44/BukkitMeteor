@@ -1,6 +1,5 @@
 package me.blueslime.bukkitmeteor.utils;
 
-import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -11,6 +10,7 @@ import org.bukkit.util.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @SuppressWarnings("unused")
 public class WorldLocation {
@@ -292,9 +292,9 @@ public class WorldLocation {
 
     public static List<WorldLocation> getLocations(ConfigurationSection section) {
         if (section == null) {
-            return new OptimizedList<>();
+            return new CopyOnWriteArrayList<>();
         }
-        List<WorldLocation> worldLocationList = new OptimizedList<>();
+        List<WorldLocation> worldLocationList = new CopyOnWriteArrayList<>();
 
         for (String id : section.getKeys(false)) {
             WorldLocation worldLocation = fromConfiguration(section.getConfigurationSection(id));

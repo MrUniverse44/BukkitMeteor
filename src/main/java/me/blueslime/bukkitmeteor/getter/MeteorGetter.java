@@ -10,6 +10,7 @@ import me.blueslime.bukkitmeteor.menus.Menus;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.io.File;
+import java.util.Random;
 
 public class MeteorGetter implements AdvancedModule {
     private final BukkitMeteorPlugin plugin;
@@ -22,6 +23,11 @@ public class MeteorGetter implements AdvancedModule {
     @Register(identifier = "settings.yml")
     public FileConfiguration provideSettings() {
         return plugin.load(new File(plugin.getDataFolder(), "settings.yml"), "settings.yml");
+    }
+
+    @Register
+    public Random provideRandom() {
+        return new Random();
     }
 
     @Register

@@ -6,17 +6,17 @@ import me.blueslime.bukkitmeteor.conditions.type.PlaceholderCondition;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
-import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Conditions implements AdvancedModule {
 
-    private final List<Condition> externalConditions = new OptimizedList<>();
-    private final List<Condition> conditions = new OptimizedList<>();
+    private final List<Condition> externalConditions = new CopyOnWriteArrayList<>();
+    private final List<Condition> conditions = new CopyOnWriteArrayList<>();
     private final BukkitMeteorPlugin plugin;
 
     public Conditions(BukkitMeteorPlugin plugin) {
@@ -73,7 +73,7 @@ public class Conditions implements AdvancedModule {
     }
 
     private List<Condition> getAllConditions() {
-        List<Condition> combined = new OptimizedList<>(externalConditions);
+        List<Condition> combined = new CopyOnWriteArrayList<>(externalConditions);
         combined.addAll(conditions);
         return combined;
     }

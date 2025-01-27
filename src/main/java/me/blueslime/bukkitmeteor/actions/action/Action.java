@@ -1,7 +1,6 @@
 package me.blueslime.bukkitmeteor.actions.action;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
-import me.blueslime.bukkitmeteor.utils.list.OptimizedList;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -25,7 +24,7 @@ public abstract class Action {
      * @param parameter text
      */
     public void execute(BukkitMeteorPlugin plugin, String parameter, Player... players) {
-        execute(plugin, parameter, new OptimizedList<>(players));
+        execute(plugin, parameter, Arrays.asList(players));
     }
 
     /**

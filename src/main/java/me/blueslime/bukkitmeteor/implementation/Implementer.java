@@ -47,7 +47,7 @@ public interface Implementer {
     }
 
     @SuppressWarnings("unchecked")
-    default <T> T[] createInstances(Class<T>[] values) {
+    default <T> T[] createInstances(Class<? extends T>... values) {
         T[] instances = (T[]) Array.newInstance(values[0], values.length);
         for (int i = 0; i < values.length; i++) {
             instances[i] = createInstance(values[i]);
