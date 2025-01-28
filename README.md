@@ -26,7 +26,7 @@ Dependency:
             <artifactId>BukkitMeteor</artifactId>
             <version>TAG</version>
             <!-- TAG = latest version, for example:
-            <version>2.3.5</version>
+            <version>2.3.7</version>
             -->
         </dependency>
 ```

@@ -6,9 +6,9 @@ import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.utilitiesapi.commands.AdvancedCommand;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin> implements AdvancedModule {
 
@@ -17,11 +17,7 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
     }
 
     public InjectedCommand(String command, List<String> aliases) {
-        super(Implements.fetch(BukkitMeteorPlugin.class), command, Collections.unmodifiableList(aliases));
-    }
-
-    public InjectedCommand(String command, List<String> aliases, boolean customList) {
-        super(Implements.fetch(BukkitMeteorPlugin.class), command, customList ? aliases : Collections.unmodifiableList(aliases));
+        super(Implements.fetch(BukkitMeteorPlugin.class), command, aliases);
     }
 
     public InjectedCommand(FileConfiguration configuration, String commandPath, String aliasesPath) {
@@ -33,8 +29,8 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
             "Plugin Command",
             "/<command> <args>",
             configuration != null ?
-                Collections.unmodifiableList(configuration.getStringList(aliasesPath)) :
-                Collections.unmodifiableList(new ArrayList<>())
+                configuration.getStringList(aliasesPath) :
+                new CopyOnWriteArrayList<>()
         );
     }
 
