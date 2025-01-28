@@ -38,15 +38,7 @@ public abstract class Action {
 
     public String replace(String parameter) {
         for (String prefix : prefixes) {
-            parameter = parameter
-                .replace(" " + prefix + " ", "")
-                .replace(" " + prefix, "")
-                .replace(prefix + " ", "")
-                    .replace(prefix, "");
-
-            // It's impossible to do not replace variable.
-            String regex = "(?i)" + prefix.replace("<", "<\\u00A7?.*?");
-            parameter = parameter.replaceAll(regex + "\\s?", "");
+            parameter = parameter.replace(" " + prefix + " ", "").replace(" " + prefix, "").replace(prefix + " ", "").replace(prefix, "");
         }
         return parameter;
     }
