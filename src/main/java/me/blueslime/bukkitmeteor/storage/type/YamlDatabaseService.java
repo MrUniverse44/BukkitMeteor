@@ -21,11 +21,12 @@ import java.util.stream.IntStream;
 
 @SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
 public class YamlDatabaseService extends StorageDatabase implements AdvancedModule {
+
     private final File dataFolder;
 
     /**
      * Initialize YAML database connection
-     * @param register Whether to register this service in Implements
+     * @param register to register this connection to the Implements
      */
     public YamlDatabaseService(RegistrationType register) {
         this.dataFolder = new File(fetch(File.class, "folder"), "data");
@@ -82,28 +83,32 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj) {
         return CompletableFuture.runAsync(() -> save(obj));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void saveOrUpdateSync(StorageObject obj) {
         save(obj);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void connect() {
-        /* Empty body because Yaml doesn't need this */
-    }
+    public void connect() { }
 
     private void save(StorageObject obj) {
         Class<?> clazz = obj.getClass();
-        File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
 
         String identifierValue = null;
-
         Map<String, Object> addMap = new HashMap<>();
 
         for (Field field : clazz.getDeclaredFields()) {
@@ -117,6 +122,9 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
                 String name = field.getName();
 
                 if (field.isAnnotationPresent(StorageIdentifier.class)) {
+                    if (value == null) {
+                        throw new IllegalArgumentException("Field of @StorageIdentifier can't be null.");
+                    }
                     identifierValue = value.toString();
                 }
 
@@ -136,17 +144,28 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
                     addMap.put(name, value);
                 }
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                logError("Can't save all fields data of the object to storage", e);
             }
         }
 
-        String prefix = identifierValue != null ? identifierValue + "." : "";
-        addMap.forEach((key, value) -> config.set(prefix + key, value));
+        if (identifierValue == null) {
+            throw new IllegalArgumentException("Object of class " + clazz.getSimpleName() + " don't have @StorageIdentifier.");
+        }
+
+        File classFolder = new File(dataFolder, clazz.getSimpleName());
+        if (!classFolder.exists()) {
+            classFolder.mkdirs();
+        }
+
+        File file = new File(classFolder, identifierValue + ".yml");
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+
+        addMap.forEach(config::set);
 
         try {
             config.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            logError("Can't save object file", e);
         }
     }
 
@@ -191,13 +210,12 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
                 Object fieldValue = field.get(obj);
                 resultMap.put(field.getName(), handleComplexObject(fieldValue));
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                logError("Can't access to a field data", e);
             }
         }
 
         return resultMap;
     }
-
 
     private boolean isPrimitiveOrWrapper(Class<?> type) {
         return type.isPrimitive() ||
@@ -211,59 +229,68 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
                 type.equals(Float.class);
     }
 
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Optional<T>> loadByIdAsync(Class<T> clazz, String identifier) {
         return CompletableFuture.supplyAsync(() -> loadByIdSync(clazz, identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier) {
-        File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
+        File classFolder = new File(dataFolder, clazz.getSimpleName());
+        File file = new File(classFolder, identifier + ".yml");
         if (!file.exists()) {
             return Optional.empty();
         }
 
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-        ConfigurationSection section;
-
-
-        if (identifier == null || identifier.isEmpty()) {
-            section = config;
-        } else {
-            section = config.getConfigurationSection(identifier);
-        }
-
-        return Optional.ofNullable(instantiateObject(clazz, section, identifier));
+        return Optional.ofNullable(instantiateObject(clazz, config, identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Void> deleteByIdAsync(Class<T> clazz, String identifier) {
         return CompletableFuture.runAsync(() -> delete(clazz, identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
-        File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
-        if (file.exists() && (identifier == null || identifier.isEmpty())) {
+        delete(clazz, identifier);
+    }
 
+    public <T extends StorageObject> void delete(Class<T> clazz, String identifier) {
+        File classFolder = new File(dataFolder, clazz.getSimpleName());
+        File file = new File(classFolder, identifier + ".yml");
+        if (file.exists()) {
             file.delete();
         }
     }
 
     private <T extends StorageObject> Set<T> loadAll(Class<T> clazz) {
-        File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
         Set<T> set = new HashSet<>();
-        if (!file.exists()) {
+        File classFolder = new File(dataFolder, clazz.getSimpleName());
+        if (!classFolder.exists()) {
             return set;
         }
 
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-
-        for (String key : config.getKeys(false)) {
-            ConfigurationSection section = config.getConfigurationSection(key);
-            if (section != null) {
-                T object = instantiateObject(clazz, section, key);
+        File[] files = classFolder.listFiles((dir, name) -> name.endsWith(".yml"));
+        if (files != null) {
+            for (File file : files) {
+                // Se asume que el nombre del archivo (sin extensión) es el identificador
+                String fileName = file.getName();
+                String identifier = fileName.substring(0, fileName.lastIndexOf('.'));
+                FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+                T object = instantiateObject(clazz, config, identifier);
                 if (object != null) {
                     set.add(object);
                 }
@@ -273,23 +300,22 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
         return set;
     }
 
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
         return CompletableFuture.supplyAsync(() -> loadAll(clazz));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
         return loadAll(clazz);
     }
 
-    public <T extends StorageObject> void delete(Class<T> clazz, String identifier) {
-        File file = new File(dataFolder, clazz.getSimpleName() + ".yml");
-        if (file.exists()) {
-            file.delete();
-        }
-    }
 
     @SuppressWarnings("unchecked")
     private <T extends StorageObject> T instantiateObject(Class<?> clazz, ConfigurationSection config, String identifier) {
@@ -307,16 +333,15 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
 
                         Object value;
 
-                        if (isComplexObject(parameters[i].getType())) {
+                        if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
+                            value = identifier;
+                        } else if (isComplexObject(parameters[i].getType())) {
                             ConfigurationSection section = config.getConfigurationSection(paramName);
-
                             if (section == null) {
                                 value = config.get(paramName);
                             } else {
                                 value = instantiateObject(parameters[i].getType(), section, identifier);
                             }
-                        } else if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
-                            value = identifier;
                         } else {
                             value = config.get(paramName);
                         }
@@ -332,15 +357,15 @@ public class YamlDatabaseService extends StorageDatabase implements AdvancedModu
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logError("Can't instantiate yaml object", e);
         }
         return null;
     }
 
-
     @Override
     public void closeConnection() {
-        // No action needed for YAML
+        // No se requiere acción para YAML.
     }
 }
+
 

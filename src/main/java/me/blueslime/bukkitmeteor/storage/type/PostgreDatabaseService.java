@@ -1,148 +1,153 @@
 package me.blueslime.bukkitmeteor.storage.type;
 
-import me.blueslime.bukkitmeteor.implementation.Implements;
-import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
-import me.blueslime.bukkitmeteor.storage.interfaces.*;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageIdentifier;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageIgnore;
+import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @SuppressWarnings("unused")
-public class PostgreDatabaseService extends StorageDatabase implements AdvancedModule {
+public class PostgreDatabaseService extends StorageDatabase {
 
     private Connection connection;
-    private final String password;
-    private final String user;
     private final String url;
+    private final String user;
+    private final String password;
 
     /**
-     * Initialize postgre service
-     * @param url postgre url
-     * @param user user
-     * @param password password
-     * @param register to register this connection to the Implements
+     * Create your postgre connection
+     * @param url to connect
+     * @param user of session
+     * @param password of session
+     * @param register to the implements
      */
     public PostgreDatabaseService(String url, String user, String password, RegistrationType register) {
-        this.password = password;
-        this.user = user;
+        this(url, user, password, register, null);
+    }
+
+    /**
+     * Create your postgre connection
+     * @param url to connect
+     * @param user of session
+     * @param password of session
+     * @param register to the implements
+     * @param identifier for the implements
+     */
+    public PostgreDatabaseService(String url, String user, String password, RegistrationType register, String identifier) {
         this.url = url;
+        this.user = user;
+        this.password = password;
 
         if (register == null) {
             register = RegistrationType.DONT_REGISTER;
         }
 
         if (register.isDouble() || register.isOnlyThis()) {
-            registerImpl(PostgreDatabaseService.class, this, true);
+            registerImpl(PostgreDatabaseService.class, identifier, this, true);
         }
 
         if (register.isDouble()) {
-            registerImpl(StorageDatabase.class, this, true);
+            registerImpl(StorageDatabase.class, identifier, this, true);
         }
     }
 
     /**
-     * Initialize postgre service
-     * @param url postgre url
-     * @param user user
-     * @param password password
-     * @param register to register this connection to the Implements
-     * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
+     * {@inheritDoc}
      */
-    public PostgreDatabaseService(String url, String user, String password, RegistrationType register, String identifier) {
-        this.password = password;
-        this.user = user;
-        this.url = url;
-
-        boolean isSet = identifier != null;
-
-        if (register == null) {
-            register = RegistrationType.DONT_REGISTER;
-        }
-
-        if (register.isDouble() || register.isOnlyThis()) {
-            if (isSet) {
-                registerImpl(PostgreDatabaseService.class, identifier, this, true);
-            } else {
-                registerImpl(PostgreDatabaseService.class, this, true);
-            }
-        }
-
-        if (register.isDouble()) {
-            if (isSet) {
-                registerImpl(StorageDatabase.class, identifier, this, true);
-            } else {
-                registerImpl(StorageDatabase.class, this, true);
-            }
-        }
-    }
-
+    @Override
     public void connect() {
         try {
-            if (connection == null || connection.isClosed()) {
-                connection = DriverManager.getConnection(url, user, password);
-            }
+            connection = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            logError("Error connecting to the database", e);
         }
     }
 
-    public void disconnect() throws SQLException {
-        if (connection != null && !connection.isClosed()) {
-            connection.close();
+    public void disconnect() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                logError("Error closing database connection", e);
+            }
         }
     }
 
-    public Connection getConnection() {
-        return connection;
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj) {
         return CompletableFuture.runAsync(() -> save(obj));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void saveOrUpdateSync(StorageObject obj) {
         save(obj);
     }
 
     private void save(StorageObject obj) {
-        if (connection == null) {
-            throw new IllegalStateException("No connection established. Call connect() first.");
-        }
-        Class<?> clazz = obj.getClass();
-        String tableName = clazz.getSimpleName();
-        StringBuilder columns = new StringBuilder();
-        StringBuilder values = new StringBuilder();
-        StringBuilder updateValues = new StringBuilder();
-        String identifierValue = null;
-        String identifierColumn = "id";
+        ensureDatabaseConnected();
 
-        for (Field field : clazz.getDeclaredFields()) {
+        Map<String, Object> columns = createColumnsFromObject(obj);
+        String identifierValue = extractIdentifier(obj);
+        String tableName = obj.getClass().getSimpleName();
+
+        StringBuilder sql = new StringBuilder("INSERT INTO " + tableName + " (");
+        List<String> colNames = new ArrayList<>(columns.keySet());
+        sql.append(String.join(", ", colNames));
+        sql.append(") VALUES (");
+        sql.append(String.join(", ", Collections.nCopies(colNames.size(), "?")));
+        sql.append(")");
+
+        if (identifierValue != null) {
+            sql.append(" ON CONFLICT (_id) DO UPDATE SET ");
+            List<String> updates = new ArrayList<>();
+            for (String col : colNames) {
+                if (col.equals("_id")) continue;
+                updates.add(col + " = EXCLUDED." + col);
+            }
+            sql.append(String.join(", ", updates));
+        }
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql.toString())) {
+            int i = 1;
+            for (String col : colNames) {
+                stmt.setObject(i++, columns.get(col));
+            }
+            stmt.executeUpdate();
+        } catch (SQLException e) {
+            logError("Error when the plugin was saving/updating an object", e);
+        }
+    }
+
+    private Map<String, Object> createColumnsFromObject(Object obj) {
+        Map<String, Object> columns = new HashMap<>();
+        for (Field field : obj.getClass().getDeclaredFields()) {
+            if (field.isAnnotationPresent(StorageIgnore.class)) {
+                continue;
+            }
             field.setAccessible(true);
             try {
-                if (field.isAnnotationPresent(StorageIgnore.class)) {
-                    continue;
-                }
                 Object value = field.get(obj);
-                String name = field.getName();
-
-                if (field.isAnnotationPresent(StorageIdentifier.class)) {
-                    identifierValue = value.toString();
-                    identifierColumn = name;
-                }
+                String columnName = field.getName();
 
                 if (field.isAnnotationPresent(StorageKey.class)) {
                     StorageKey key = field.getAnnotation(StorageKey.class);
                     if (!key.key().isEmpty()) {
-                        name = key.key();
+                        columnName = key.key();
                     }
                     if (value == null && !key.defaultValue().isEmpty()) {
                         value = convertValue(field.getType(), key.defaultValue());
@@ -150,220 +155,133 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
                 }
 
                 if (isComplexObject(field.getType())) {
-                    saveComplexObject(value);
-                    columns.append(name).append(",");
-                    String fieldId = getComplexObjectId(value);
-                    if (fieldId == null) {
-                        fieldId = field.getName();
-                    }
-                    values.append("'").append(fieldId).append("',");
-                } else {
-                    columns.append(name).append(",");
-                    values.append("'").append(value).append("',");
-
-                    updateValues.append(name).append(" = EXCLUDED.").append(name).append(",");
+                    value = handleComplexObject(value);
                 }
 
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                columns.put(columnName, value);
+            } catch (Exception e) {
+                logError("Error processing field: " + field.getName(), e);
             }
         }
-
-        columns.setLength(columns.length() - 1);
-        values.setLength(values.length() - 1);
-        updateValues.setLength(updateValues.length() - 1);
-
-        String query;
-        if (identifierValue != null) {
-            query = "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ") "
-                    + "ON CONFLICT (" + identifierColumn + ") DO UPDATE SET " + updateValues + ";";
-        } else {
-            query = "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ");";
-        }
-
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+        return columns;
     }
 
-    private void saveComplexObject(Object obj) throws IllegalAccessException {
-        if (obj == null) {
-            return;
-        }
-
-        Class<?> clazz = obj.getClass();
-        String tableName = clazz.getSimpleName();
-        StringBuilder columns = new StringBuilder();
-        StringBuilder values = new StringBuilder();
-        StringBuilder updateValues = new StringBuilder();
-        String identifierValue = null;
-        String identifierColumn = "id";
-
-        for (Field complexField : clazz.getDeclaredFields()) {
-            complexField.setAccessible(true);
-            if (complexField.isAnnotationPresent(StorageIgnore.class)) {
-                continue;
-            }
-
-            Object value = complexField.get(obj);
-            String name = complexField.getName();
-
-            if (complexField.isAnnotationPresent(StorageIdentifier.class)) {
-                identifierValue = value.toString();
-                identifierColumn = name;
-            }
-
-            if (complexField.isAnnotationPresent(StorageKey.class)) {
-                StorageKey key = complexField.getAnnotation(StorageKey.class);
-                if (!key.key().isEmpty()) {
-                    name = key.key();
-                }
-                if (value == null && !key.defaultValue().isEmpty()) {
-                    value = convertValue(complexField.getType(), key.defaultValue());
-                }
-            }
-
-            columns.append(name).append(",");
-            values.append("'").append(value).append("',");
-
-            updateValues.append(name).append(" = EXCLUDED.").append(name).append(",");
-        }
-
-        columns.setLength(columns.length() - 1);
-        values.setLength(values.length() - 1);
-        updateValues.setLength(updateValues.length() - 1);
-
-        String query;
-        if (identifierValue != null) {
-            query = "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ") "
-                    + "ON CONFLICT (" + identifierColumn + ") DO UPDATE SET " + updateValues + ";";
-        } else {
-            query = "INSERT INTO " + tableName + " (" + columns + ") VALUES (" + values + ");";
-        }
-
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private String getComplexObjectId(Object obj) {
+    private Object handleComplexObject(Object obj) {
         if (obj == null) {
             return null;
         }
-        try {
-            for (Field field : obj.getClass().getDeclaredFields()) {
-                if (field.isAnnotationPresent(StorageIdentifier.class)) {
-                    field.setAccessible(true);
-                    return field.get(obj).toString();
-                }
+        return obj.toString();
+    }
+
+    private String extractIdentifier(StorageObject obj) {
+        for (Field field : obj.getClass().getDeclaredFields()) {
+            if (field.isAnnotationPresent(StorageIdentifier.class)) {
+                field.setAccessible(true);
+                return PluginConsumer.ofUnchecked(
+                        () -> {
+                            Object value = field.get(obj);
+                            return value != null ? value.toString() : null;
+                        },
+                        e -> logError("Error extracting field value of: " + field.getName(), e),
+                        () -> null
+                );
             }
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
         }
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Optional<T>> loadByIdAsync(Class<T> clazz, String identifier) {
-        return CompletableFuture.supplyAsync(() -> load(clazz, identifier));
+        ensureDatabaseConnected();
+        return CompletableFuture.supplyAsync(() -> loadByIdSync(clazz, identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier) {
-        return load(clazz, identifier);
-    }
-
-    private <T extends StorageObject> Optional<T> load(Class<T> clazz, String identifier) {
-        if (connection == null) {
-            throw new IllegalStateException("No connection established. Call connect() first.");
-        }
+        ensureDatabaseConnected();
         String tableName = clazz.getSimpleName();
-        String query = "SELECT * FROM " + tableName + " WHERE id = ?";
-
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, identifier);
-            ResultSet resultSet = statement.executeQuery();
-
-            if (resultSet.next()) {
-                return Optional.ofNullable(instantiateObject(clazz, resultSet, identifier));
+        String sql = "SELECT * FROM " + tableName + " WHERE _id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setObject(1, identifier);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    T obj = instantiateObject(clazz, rs, identifier);
+                    return Optional.ofNullable(obj);
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logError("Error at loading an object id", e);
         }
-
         return Optional.empty();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Void> deleteByIdAsync(Class<T> clazz, String identifier) {
-        return CompletableFuture.runAsync(() -> delete(clazz, identifier));
+        return CompletableFuture.runAsync(() -> deleteByIdSync(clazz, identifier));
     }
 
-     @Override
-     public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
-        delete(clazz, identifier);
-     }
-
-     private <T extends StorageObject> Set<T> loadAll(Class<T> clazz) {
-         if (connection == null) {
-             throw new IllegalStateException("No connection established. Call connect() first.");
-         }
-         String tableName = clazz.getSimpleName();
-         String query = "SELECT * FROM " + tableName;
-
-         Set<T> results = new HashSet<>();
-         try (PreparedStatement statement = connection.prepareStatement(query)) {
-             ResultSet resultSet = statement.executeQuery();
-
-             while (resultSet.next()) {
-                 T object = instantiateObject(clazz, resultSet, resultSet.getString("id"));
-                 if (object != null) {
-                     results.add(object);
-                 }
-             }
-         } catch (SQLException e) {
-             e.printStackTrace();
-         }
-
-         return results;
-     }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
-        return CompletableFuture.supplyAsync(
-            () -> loadAll(clazz)
-        );
-    }
-
-    @Override
-    public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
-        return loadAll(clazz);
-    }
-
-    private void delete(Class<?> clazz, String identifier) {
+    public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
+        ensureDatabaseConnected();
         String tableName = clazz.getSimpleName();
-        String query = "DELETE FROM " + tableName + " WHERE id = ?";
-
-        try (PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, identifier);
-            statement.executeUpdate();
+        String sql = "DELETE FROM " + tableName + " WHERE _id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setString(1, identifier);
+            stmt.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logError("Error when plugin was deleting data from database", e);
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public void closeConnection() {
-        try {
-            if (connection != null && !connection.isClosed()) {
-                connection.close();
+    public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
+        return CompletableFuture.supplyAsync(() -> loadAllSync(clazz));
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
+        ensureDatabaseConnected();
+        Set<T> results = new HashSet<>();
+        String tableName = clazz.getSimpleName();
+        String sql = "SELECT * FROM " + tableName;
+
+        try (PreparedStatement stmt = connection.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            while (rs.next()) {
+                String id = rs.getString("_id");
+                T obj = instantiateObject(clazz, rs, id);
+                if (obj != null) {
+                    results.add(obj);
+                }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logError("Error when loading all objects", e);
+        }
+        return results;
+    }
+
+    private void ensureDatabaseConnected() {
+        if (connection == null) {
+            throw new IllegalStateException("Not connected to the database.");
         }
     }
 
@@ -404,19 +322,25 @@ public class PostgreDatabaseService extends StorageDatabase implements AdvancedM
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logError("Can't instantiate object", e);
         }
         return null;
     }
 
     private Object instantiateComplexObject(Class<?> complexType, ResultSet resultSet, String identifier) {
         try {
-            return instantiateObject(complexType, resultSet, identifier);  // Llamada recursiva para manejar objetos complejos
+            return instantiateObject(complexType, resultSet, identifier);
         } catch (Exception e) {
-            e.printStackTrace();
+            logError("Can't instantiate complex object", e);
             return null;
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void closeConnection() {
+        disconnect();
+    }
 }
-

@@ -135,8 +135,10 @@ public class Scoreboards {
     public boolean size(String line) {
         line = TextUtilities.colorize(line);
         if (39 <= line.length()) {
-            plugin.getLogs().info("&fLine: '" + line + "&f' has more than 39 characters, String length is longer than maximum allowed (" + line.length() + " > 39)");
-            plugin.getLogs().info("This line will be hide for now, please fix this line.");
+            plugin.info(
+                "&fLine: '" + line + "&f' has more than 39 characters, String length is longer than maximum allowed (" + line.length() + " > 39)",
+                "This line will be hide for now, please fix this line."
+            );
             return true;
         }
         return false;

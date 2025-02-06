@@ -7,7 +7,6 @@ import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
-import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
 import me.blueslime.bukkitmeteor.storage.interfaces.*;
@@ -22,7 +21,8 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.mongodb.client.model.Filters.eq;
 
-public class ModernMongoDatabaseService extends StorageDatabase implements AdvancedModule {
+@SuppressWarnings("unused")
+public class ModernMongoDatabaseService extends StorageDatabase {
 
     private MongoClient mongoClient;
     private MongoDatabase database;
@@ -30,10 +30,23 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
     private final String databaseName;
     private final String uri;
 
+    /**
+     * Create your mongo database connection
+     * @param uri to connect
+     * @param databaseName for this session
+     * @param register to the implements
+     */
     public ModernMongoDatabaseService(String uri, String databaseName, RegistrationType register) {
         this(uri, databaseName, register, null);
     }
 
+    /**
+     * Create your mongo database connection
+     * @param uri to connect
+     * @param databaseName for this session
+     * @param register to the implements
+     * @param identifier for the implements
+     */
     public ModernMongoDatabaseService(String uri, String databaseName, RegistrationType register, String identifier) {
         this.databaseName = databaseName;
         this.uri = uri;
@@ -51,6 +64,10 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void connect() {
         MongoClientSettings settings = MongoClientSettings.builder()
                 .applyConnectionString(new ConnectionString(uri))
@@ -70,11 +87,17 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         return database;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj) {
         return CompletableFuture.runAsync(() -> save(obj));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void saveOrUpdateSync(StorageObject obj) {
         save(obj);
@@ -165,6 +188,9 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         return createDocumentFromObject(obj);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Optional<T>> loadByIdAsync(Class<T> clazz, String identifier) {
         ensureDatabaseConnected();
@@ -172,6 +198,9 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         return CompletableFuture.supplyAsync(() -> loadByIdSync(clazz, identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier) {
         ensureDatabaseConnected();
@@ -182,11 +211,17 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         return Optional.ofNullable(document != null ? instantiateObject(clazz, document, identifier) : null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Void> deleteByIdAsync(Class<T> clazz, String identifier) {
         return CompletableFuture.runAsync(() -> deleteByIdSync(clazz, identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
         ensureDatabaseConnected();
@@ -195,11 +230,17 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         collection.deleteOne(eq("_id", identifier));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
         return CompletableFuture.supplyAsync(() -> loadAllSync(clazz));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
         ensureDatabaseConnected();
@@ -221,10 +262,6 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         if (database == null) {
             throw new IllegalStateException("No database connection. Call connect() first.");
         }
-    }
-
-    private void logError(String message, Exception e) {
-        fetch(MeteorLogger.class).error(e, message);
     }
 
     @SuppressWarnings("unchecked")
@@ -294,6 +331,9 @@ public class ModernMongoDatabaseService extends StorageDatabase implements Advan
         return args;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void closeConnection() {
         disconnect();

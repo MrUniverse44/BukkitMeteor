@@ -1,5 +1,7 @@
 package me.blueslime.bukkitmeteor.storage;
 
+import me.blueslime.bukkitmeteor.implementation.module.Service;
+import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
@@ -12,26 +14,88 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public abstract class StorageDatabase {
+public abstract class StorageDatabase implements Service {
 
+    /**
+     * Asynchronously loads an object by its identifier.
+     *
+     * @param clazz      The class type of the object.
+     * @param identifier The unique identifier of the object.
+     * @param <T>        The type of the storage object.
+     * @return A CompletableFuture containing an Optional of the loaded object.
+     */
     public abstract <T extends StorageObject> CompletableFuture<Optional<T>> loadByIdAsync(Class<T> clazz, String identifier);
 
+    /**
+     * Synchronously loads an object by its identifier.
+     *
+     * @param clazz      The class type of the object.
+     * @param identifier The unique identifier of the object.
+     * @param <T>        The type of the storage object.
+     * @return An Optional containing the loaded object.
+     */
     public abstract <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier);
 
+    /**
+     * Asynchronously deletes an object by its identifier.
+     *
+     * @param clazz      The class type of the object.
+     * @param identifier The unique identifier of the object.
+     * @param <T>        The type of the storage object.
+     * @return A CompletableFuture representing the deletion process.
+     */
     public abstract <T extends StorageObject> CompletableFuture<Void> deleteByIdAsync(Class<T> clazz, String identifier);
 
+    /**
+     * Synchronously deletes an object by its identifier.
+     *
+     * @param clazz      The class type of the object.
+     * @param identifier The unique identifier of the object.
+     * @param <T>        The type of the storage object.
+     */
     public abstract <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier);
 
+    /**
+     * Asynchronously loads all objects of a given type.
+     *
+     * @param clazz The class type of the objects.
+     * @param <T>   The type of the storage object.
+     * @return A CompletableFuture containing a set of all loaded objects.
+     */
     public abstract <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz);
 
+    /**
+     * Synchronously loads all objects of a given type.
+     *
+     * @param clazz The class type of the objects.
+     * @param <T>   The type of the storage object.
+     * @return A set containing all loaded objects.
+     */
     public abstract <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz);
 
+    /**
+     * Asynchronously saves or updates an object in the storage.
+     *
+     * @param obj The object to save or update.
+     * @return A CompletableFuture representing the operation.
+     */
     public abstract CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj);
 
+    /**
+     * Synchronously saves or updates an object in the storage.
+     *
+     * @param obj The object to save or update.
+     */
     public abstract void saveOrUpdateSync(StorageObject obj);
 
+    /**
+     * Establishes a connection to the storage database.
+     */
     public abstract void connect();
 
+    /**
+     * Closes the connection to the storage database.
+     */
     public abstract void closeConnection();
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -97,6 +161,10 @@ public abstract class StorageDatabase {
             return Enum.valueOf((Class<Enum>)clazz, value);
         }
         return value;
+    }
+
+    protected void logError(String message, Exception e) {
+        fetch(MeteorLogger.class).error(e, message);
     }
 
     protected boolean isComplexObject(Class<?> clazz) {

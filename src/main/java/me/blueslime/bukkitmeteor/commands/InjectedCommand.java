@@ -4,6 +4,7 @@ import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.utilitiesapi.commands.AdvancedCommand;
+import me.blueslime.utilitiesapi.commands.sender.Sender;
 import org.bukkit.configuration.file.FileConfiguration;
 
 import java.util.Collections;
@@ -12,14 +13,29 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin> implements AdvancedModule {
 
+    /**
+     * Create a command
+     * @param command to register
+     */
     public InjectedCommand(String command) {
         super(Implements.fetch(BukkitMeteorPlugin.class), command);
     }
 
+    /**
+     * Create a command
+     * @param command to register
+     * @param aliases for the command
+     */
     public InjectedCommand(String command, List<String> aliases) {
         super(Implements.fetch(BukkitMeteorPlugin.class), command, aliases);
     }
 
+    /**
+     * Create a command from configuration data
+     * @param configuration for command data
+     * @param commandPath from the configuration
+     * @param aliasesPath from the configuration
+     */
     public InjectedCommand(FileConfiguration configuration, String commandPath, String aliasesPath) {
         super(
             Implements.fetch(BukkitMeteorPlugin.class),
@@ -34,9 +50,22 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
         );
     }
 
+    /**
+     * Create a command
+     * @param command to register
+     * @param description for the command
+     * @param usageMessage for the command
+     * @param aliases for the command
+     */
     public InjectedCommand(String command, String description, String usageMessage, List<String> aliases) {
         super(Implements.fetch(BukkitMeteorPlugin.class), command, description, usageMessage, Collections.unmodifiableList(aliases));
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public abstract void executeCommand(Sender sender, String command, String[] arguments);
 
     @Override
     public boolean overwriteCommand() {
