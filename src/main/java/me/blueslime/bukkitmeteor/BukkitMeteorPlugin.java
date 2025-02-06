@@ -19,10 +19,12 @@ import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.bukkitmeteor.scoreboards.Scoreboards;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
+import me.blueslime.bukkitmeteor.storage.type.*;
 import me.blueslime.bukkitmeteor.utils.FileUtil;
 import me.blueslime.utilitiesapi.item.nbt.PersistentDataNBT;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -222,6 +224,125 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     public void registerDatabase(StorageDatabase... databases) {
         for (StorageDatabase database : databases) {
             database.connect();
+        }
+    }
+
+    public void registerDatabase(ConfigurationSection section, String path) {
+        registerDatabase(section, path, DatabaseType.YAML, RegistrationType.DOUBLE_REGISTER, false, "");
+    }
+
+    public void registerDatabase(ConfigurationSection section, String path, RegistrationType registrationType) {
+        registerDatabase(section, path, DatabaseType.YAML, registrationType, false, "");
+    }
+
+    public void registerDatabase(ConfigurationSection section, String path, RegistrationType registrationType, String identifier) {
+        registerDatabase(section, path, DatabaseType.YAML, registrationType, identifier != null && !identifier.isEmpty(), identifier);
+    }
+
+    public void registerDatabase(ConfigurationSection section, String path, DatabaseType defType, RegistrationType defRegister, boolean identifier, String id) {
+        path = path.isEmpty() ? "" : path.endsWith(".") ? path : path + ".";
+
+        String type = section.getString(path + "database");
+
+        DatabaseType selectedDatabase = type != null ? DatabaseType.fromString(type) : defType;
+
+        switch (selectedDatabase) {
+            case POSTGRE -> {
+                if (identifier) {
+                    registerDatabase(
+                        new PostgreDatabaseService(
+                            section.getString(path + "postgre.uri"),
+                            section.getString(path + "postgre.user"),
+                            section.getString(path + "postgre.password"),
+                            defRegister,
+                            id
+                        )
+                    );
+                    return;
+                }
+                registerDatabase(
+                    new PostgreDatabaseService(
+                        section.getString(path + "postgre.uri"),
+                        section.getString(path + "postgre.user"),
+                        section.getString(path + "postgre.password"),
+                        defRegister
+                    )
+                );
+            }
+            case YAML -> {
+                if (identifier) {
+                    registerDatabase(
+                        new YamlDatabaseService(
+                            defRegister,
+                            id
+                        )
+                    );
+                    return;
+                }
+                registerDatabase(
+                    new YamlDatabaseService(
+                        defRegister
+                    )
+                );
+            }
+            case JSON -> {
+                if (identifier) {
+                    registerDatabase(
+                        new JsonDatabaseService(
+                            defRegister,
+                            id
+                        )
+                    );
+                    return;
+                }
+                registerDatabase(
+                    new JsonDatabaseService(
+                        defRegister
+                    )
+                );
+            }
+            case MARIADB -> {
+                if (identifier) {
+                    registerDatabase(
+                        new MariaDatabaseService(
+                            section.getString(path + "mariadb.url"),
+                            section.getString(path + "mariadb.user"),
+                            section.getString(path + "mariadb.password"),
+                            defRegister,
+                            id
+                        )
+                    );
+                    return;
+                }
+                registerDatabase(
+                    new MariaDatabaseService(
+                        section.getString(path + "mariadb.url"),
+                        section.getString(path + "mariadb.user"),
+                        section.getString(path + "mariadb.password"),
+                        defRegister
+                    )
+                );
+            }
+            case MONGODB -> {
+                if (identifier) {
+                    registerDatabase(
+                        new ModernMongoDatabaseService(
+                            section.getString(path + "mariadb.uri"),
+                            section.getString(path + "mariadb.database"),
+                            defRegister,
+                            id
+                        )
+                    );
+                    return;
+                }
+                registerDatabase(
+                    new ModernMongoDatabaseService(
+                        section.getString(path + "mariadb.uri"),
+                        section.getString(path + "mariadb.database"),
+                        defRegister
+                    )
+                );
+            }
         }
     }
 
