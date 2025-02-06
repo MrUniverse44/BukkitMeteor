@@ -7,7 +7,12 @@
 ---
 
 * Support from 1.8.x to 1.21.x
-* ItemBuilder with NBTs
+* All Utilities from UtilitiesAPI
+* Action System
+* Database System
+* Scoreboard System
+* Menu System
+* and more!
 
 ---
 
@@ -26,7 +31,7 @@ Dependency:
             <artifactId>BukkitMeteor</artifactId>
             <version>TAG</version>
             <!-- TAG = latest version, for example:
-            <version>2.3.7</version>
+            <version>2.4.0</version>
             -->
         </dependency>
 ```
