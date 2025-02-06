@@ -1,78 +1,84 @@
 package me.blueslime.bukkitmeteor.storage.type;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
-import me.blueslime.bukkitmeteor.storage.interfaces.*;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageIdentifier;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageIgnore;
 
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @SuppressWarnings({"unused", "ResultOfMethodCallIgnored"})
-public class YamlDatabaseService extends StorageDatabase {
+public class JsonDatabaseService extends StorageDatabase {
 
     private final File dataFolder;
+    private final Gson gson;
 
     /**
-     * Initialize YAML database connection
-     * @param register to register this connection to the Implements
+     * Json Database
+     *
+     * @param register to the implements
      */
-    public YamlDatabaseService(RegistrationType register) {
+    public JsonDatabaseService(RegistrationType register) {
         this.dataFolder = new File(fetch(File.class, "folder"), "data");
-
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
 
         if (register == null) {
             register = RegistrationType.DONT_REGISTER;
         }
-
         if (register.isDouble() || register.isOnlyThis()) {
-            registerImpl(YamlDatabaseService.class, this, true);
+            registerImpl(JsonDatabaseService.class, this, true);
         }
-
         if (register.isDouble()) {
             registerImpl(StorageDatabase.class, this, true);
         }
     }
 
     /**
-     * Initialize YAML database connection
-     * @param register to register this connection to the Implements
-     * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
+     * Json Database
+     *
+     * @param register   to the implements.
+     * @param identifier for the implements {@link Implements#fetch(Class, String)}
      */
-    public YamlDatabaseService(RegistrationType register, String identifier) {
+    public JsonDatabaseService(RegistrationType register, String identifier) {
         this.dataFolder = new File(fetch(File.class, "folder"), "data");
-
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
+        this.gson = new GsonBuilder().setPrettyPrinting().create();
 
         boolean isSet = identifier != null;
 
         if (register == null) {
             register = RegistrationType.DONT_REGISTER;
         }
-
         if (register.isDouble() || register.isOnlyThis()) {
             if (isSet) {
-                registerImpl(YamlDatabaseService.class, identifier, this, true);
+                registerImpl(JsonDatabaseService.class, identifier, this, true);
             } else {
-                registerImpl(YamlDatabaseService.class, this, true);
+                registerImpl(JsonDatabaseService.class, this, true);
             }
         }
-
         if (register.isDouble()) {
             if (isSet) {
                 registerImpl(StorageDatabase.class, identifier, this, true);
@@ -99,7 +105,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * No se requiere acción para la conexión en JSON.
      */
     @Override
     public void connect() { }
@@ -122,7 +128,7 @@ public class YamlDatabaseService extends StorageDatabase {
 
                 if (field.isAnnotationPresent(StorageIdentifier.class)) {
                     if (value == null) {
-                        throw new IllegalArgumentException("Field of @StorageIdentifier can't be null.");
+                        throw new IllegalArgumentException("Field @StorageIdentifier can't be null.");
                     }
                     identifierValue = value.toString();
                 }
@@ -143,12 +149,12 @@ public class YamlDatabaseService extends StorageDatabase {
                     addMap.put(name, value);
                 }
             } catch (IllegalAccessException e) {
-                logError("Can't save all fields data of the object to storage", e);
+                logError("Can't save field " + field.getName() + " of the object.", e);
             }
         }
 
         if (identifierValue == null) {
-            throw new IllegalArgumentException("Object of class " + clazz.getSimpleName() + " don't have @StorageIdentifier.");
+            throw new IllegalArgumentException("Object from class " + clazz.getSimpleName() + " don't have @StorageIdentifier.");
         }
 
         File classFolder = new File(dataFolder, clazz.getSimpleName());
@@ -156,15 +162,11 @@ public class YamlDatabaseService extends StorageDatabase {
             classFolder.mkdirs();
         }
 
-        File file = new File(classFolder, identifierValue + ".yml");
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-
-        addMap.forEach(config::set);
-
-        try {
-            config.save(file);
+        File file = new File(classFolder, identifierValue + ".json");
+        try (FileWriter writer = new FileWriter(file)) {
+            gson.toJson(addMap, writer);
         } catch (IOException e) {
-            logError("Can't save object file", e);
+            logError("Can't save json object.", e);
         }
     }
 
@@ -172,7 +174,6 @@ public class YamlDatabaseService extends StorageDatabase {
         if (obj == null) {
             return null;
         }
-
         Class<?> objClass = obj.getClass();
 
         if (obj instanceof Iterable) {
@@ -202,17 +203,15 @@ public class YamlDatabaseService extends StorageDatabase {
         }
 
         Map<String, Object> resultMap = new LinkedHashMap<>();
-
         for (Field field : objClass.getDeclaredFields()) {
             field.setAccessible(true);
             try {
                 Object fieldValue = field.get(obj);
                 resultMap.put(field.getName(), handleComplexObject(fieldValue));
             } catch (IllegalAccessException e) {
-                logError("Can't access to a field data", e);
+                logError("Can't get data from field " + field.getName(), e);
             }
         }
-
         return resultMap;
     }
 
@@ -242,13 +241,20 @@ public class YamlDatabaseService extends StorageDatabase {
     @Override
     public <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier) {
         File classFolder = new File(dataFolder, clazz.getSimpleName());
-        File file = new File(classFolder, identifier + ".yml");
+        File file = new File(classFolder, identifier + ".json");
         if (!file.exists()) {
             return Optional.empty();
         }
 
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-        return Optional.ofNullable(instantiateObject(clazz, config, identifier));
+        try (FileReader reader = new FileReader(file)) {
+            Type type = new TypeToken<Map<String, Object>>(){}.getType();
+            Map<String, Object> jsonMap = gson.fromJson(reader, type);
+            T object = instantiateObject(clazz, jsonMap, identifier);
+            return Optional.ofNullable(object);
+        } catch (IOException e) {
+            logError("Can't load json object.", e);
+        }
+        return Optional.empty();
     }
 
     /**
@@ -269,7 +275,7 @@ public class YamlDatabaseService extends StorageDatabase {
 
     public <T extends StorageObject> void delete(Class<T> clazz, String identifier) {
         File classFolder = new File(dataFolder, clazz.getSimpleName());
-        File file = new File(classFolder, identifier + ".yml");
+        File file = new File(classFolder, identifier + ".json");
         if (file.exists()) {
             file.delete();
         }
@@ -281,21 +287,23 @@ public class YamlDatabaseService extends StorageDatabase {
         if (!classFolder.exists()) {
             return set;
         }
-
-        File[] files = classFolder.listFiles((dir, name) -> name.endsWith(".yml"));
+        File[] files = classFolder.listFiles((dir, name) -> name.endsWith(".json"));
         if (files != null) {
             for (File file : files) {
-                // Se asume que el nombre del archivo (sin extensión) es el identificador
                 String fileName = file.getName();
                 String identifier = fileName.substring(0, fileName.lastIndexOf('.'));
-                FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-                T object = instantiateObject(clazz, config, identifier);
-                if (object != null) {
-                    set.add(object);
+                try (FileReader reader = new FileReader(file)) {
+                    Type type = new TypeToken<Map<String, Object>>(){}.getType();
+                    Map<String, Object> jsonMap = gson.fromJson(reader, type);
+                    T object = instantiateObject(clazz, jsonMap, identifier);
+                    if (object != null) {
+                        set.add(object);
+                    }
+                } catch (IOException e) {
+                    logError("Can't load json object: " + file.getName(), e);
                 }
             }
         }
-
         return set;
     }
 
@@ -315,9 +323,8 @@ public class YamlDatabaseService extends StorageDatabase {
         return loadAll(clazz);
     }
 
-
     @SuppressWarnings("unchecked")
-    private <T extends StorageObject> T instantiateObject(Class<?> clazz, ConfigurationSection config, String identifier) {
+    private <T extends StorageObject> T instantiateObject(Class<?> clazz, Map<String, Object> jsonMap, String identifier) {
         try {
             for (Constructor<?> constructor : clazz.getConstructors()) {
                 if (constructor.isAnnotationPresent(StorageConstructor.class)) {
@@ -331,40 +338,39 @@ public class YamlDatabaseService extends StorageDatabase {
                                 : parameters[i].getName();
 
                         Object value;
-
                         if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
                             value = identifier;
                         } else if (isComplexObject(parameters[i].getType())) {
-                            ConfigurationSection section = config.getConfigurationSection(paramName);
-                            if (section == null) {
-                                value = config.get(paramName);
+                            Object section = jsonMap.get(paramName);
+                            if (section instanceof Map) {
+                                value = instantiateObject(parameters[i].getType(), (Map<String, Object>) section, identifier);
                             } else {
-                                value = instantiateObject(parameters[i].getType(), section, identifier);
+                                value = section;
                             }
                         } else {
-                            value = config.get(paramName);
+                            value = jsonMap.get(paramName);
                         }
 
                         if (value == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {
                             value = convertValue(parameters[i].getType(), paramAnnotation.defaultValue());
                         }
-
                         values[i] = value;
                     }
-
                     return (T) constructor.newInstance(values);
                 }
             }
         } catch (Exception e) {
-            logError("Can't instantiate yaml object", e);
+            logError("Can't instantiate json object.", e);
         }
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void closeConnection() {
-        // No se requiere acción para YAML.
+
     }
 }
-
 

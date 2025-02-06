@@ -8,7 +8,6 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.ReplaceOptions;
 import me.blueslime.bukkitmeteor.implementation.Implements;
-import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.bukkitmeteor.storage.StorageDatabase;
 import me.blueslime.bukkitmeteor.storage.interfaces.*;
@@ -23,7 +22,7 @@ import static com.mongodb.client.model.Filters.eq;
 
 @SuppressWarnings("unused")
 @Deprecated
-public class LegacyMongoDatabaseService extends StorageDatabase implements AdvancedModule {
+public class LegacyMongoDatabaseService extends StorageDatabase {
 
     private MongoClient mongoClient = null;
     private MongoDatabase database = null;
