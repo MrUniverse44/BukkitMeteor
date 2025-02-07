@@ -327,8 +327,8 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
                 if (identifier) {
                     registerDatabase(
                         new ModernMongoDatabaseService(
-                            section.getString(path + "mariadb.uri"),
-                            section.getString(path + "mariadb.database"),
+                            section.getString(path + "mongodb.uri"),
+                            section.getString(path + "mongodb.database"),
                             defRegister,
                             id
                         )
@@ -337,8 +337,8 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
                 }
                 registerDatabase(
                     new ModernMongoDatabaseService(
-                        section.getString(path + "mariadb.uri"),
-                        section.getString(path + "mariadb.database"),
+                        section.getString(path + "mongodb.uri"),
+                        section.getString(path + "mongodb.database"),
                         defRegister
                     )
                 );
