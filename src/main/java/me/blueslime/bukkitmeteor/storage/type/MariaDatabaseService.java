@@ -8,8 +8,8 @@ import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageIgnore;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.sql.*;
 import java.util.*;
@@ -24,23 +24,23 @@ public class MariaDatabaseService extends StorageDatabase {
     private final String password;
 
     /**
-     * Create MariaDB Connection
-     * @param url to connect
-     * @param user for session.
-     * @param password for session.
-     * @param register to implements
+     * Crea la conexión a MariaDB.
+     * @param url para conectarse.
+     * @param user de la sesión.
+     * @param password de la sesión.
+     * @param register para Implements.
      */
     public MariaDatabaseService(String url, String user, String password, RegistrationType register) {
         this(url, user, password, register, null);
     }
 
     /**
-     * Create MariaDB Connection
-     * @param url to connect
-     * @param user for session.
-     * @param password for session.
-     * @param register to implements
-     * @param identifier for implements
+     * Crea la conexión a MariaDB.
+     * @param url para conectarse.
+     * @param user de la sesión.
+     * @param password de la sesión.
+     * @param register para Implements.
+     * @param identifier para Implements.
      */
     public MariaDatabaseService(String url, String user, String password, RegistrationType register, String identifier) {
         this.url = url;
@@ -71,7 +71,7 @@ public class MariaDatabaseService extends StorageDatabase {
         } catch (ClassNotFoundException e) {
             logError("Can't find MariaDB Driver", e);
         } catch (SQLException e) {
-            logError("Can't connect to the database", e);
+            logError("Can't connect to this SQL", e);
         }
     }
 
@@ -138,7 +138,7 @@ public class MariaDatabaseService extends StorageDatabase {
 
     private Map<String, Object> createColumnsFromObject(Object obj) {
         Map<String, Object> columns = new HashMap<>();
-        for (Field field : obj.getClass().getDeclaredFields()) {
+        for (var field : obj.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(StorageIgnore.class)) {
                 continue;
             }
@@ -148,7 +148,7 @@ public class MariaDatabaseService extends StorageDatabase {
                 String columnName = field.getName();
 
                 if (field.isAnnotationPresent(StorageKey.class)) {
-                    StorageKey key = field.getAnnotation(StorageKey.class);
+                    var key = field.getAnnotation(StorageKey.class);
                     if (!key.key().isEmpty()) {
                         columnName = key.key();
                     }
@@ -163,7 +163,7 @@ public class MariaDatabaseService extends StorageDatabase {
 
                 columns.put(columnName, value);
             } catch (Exception e) {
-                logError("Can't process field: " + field.getName(), e);
+                logError("Error processing field: " + field.getName(), e);
             }
         }
         return columns;
@@ -173,20 +173,21 @@ public class MariaDatabaseService extends StorageDatabase {
         if (obj == null) {
             return null;
         }
+        // Se puede ampliar para manejar objetos complejos si es necesario.
         return obj.toString();
     }
 
     private String extractIdentifier(StorageObject obj) {
-        for (Field field : obj.getClass().getDeclaredFields()) {
+        for (var field : obj.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(StorageIdentifier.class)) {
                 field.setAccessible(true);
                 return PluginConsumer.ofUnchecked(
-                    () -> {
-                        Object value = field.get(obj);
-                        return value != null ? value.toString() : null;
-                    },
-                    e -> logError("Can't get data from field: " + field.getName(), e),
-                    () -> null
+                        () -> {
+                            Object value = field.get(obj);
+                            return value != null ? value.toString() : null;
+                        },
+                        e -> logError("Error with value from field: " + field.getName(), e),
+                        () -> null
                 );
             }
         }
@@ -219,7 +220,7 @@ public class MariaDatabaseService extends StorageDatabase {
                 }
             }
         } catch (SQLException e) {
-            logError("Can't load object id", e);
+            logError("Error loading object id: " + identifier, e);
         }
         return Optional.empty();
     }
@@ -244,7 +245,7 @@ public class MariaDatabaseService extends StorageDatabase {
             stmt.setString(1, identifier);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            logError("Can't remove object data from storage", e);
+            logError("Error removing object with id: " + identifier, e);
         }
     }
 
@@ -277,15 +278,92 @@ public class MariaDatabaseService extends StorageDatabase {
                 }
             }
         } catch (SQLException e) {
-            logError("Error when loading objects", e);
+            logError("Error loading objects", e);
         }
         return results;
     }
 
     private void ensureDatabaseConnected() {
         if (connection == null) {
-            throw new IllegalStateException("Can't connect to the database.");
+            throw new IllegalStateException("Can't find connection established.");
         }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       MÉTODOS DE INSTANCIACIÓN Y CONVERSIÓN
+       ────────────────────────────────────────────────────────────────────── */
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Object[] resolveConstructorArgs(Constructor<?> constructor, ResultSet resultSet, String identifier) {
+        Parameter[] parameters = constructor.getParameters();
+        Object[] values = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter param = parameters[i];
+            StorageKey paramAnnotation = param.getAnnotation(StorageKey.class);
+            String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
+                    ? paramAnnotation.key()
+                    : param.getName();
+            String defaultValue = (paramAnnotation != null ? paramAnnotation.defaultValue() : null);
+            Object value = null;
+            try {
+                if (param.isAnnotationPresent(StorageIdentifier.class)) {
+                    value = identifier;
+                } else if (isComplexObject(param.getType())) {
+                    value = instantiateComplexObject(param.getType(), resultSet, identifier);
+                } else {
+                    value = resultSet.getObject(paramName);
+                }
+                if (value == null && defaultValue != null && !defaultValue.isEmpty()) {
+                    value = convertValue(param.getType(), defaultValue);
+                }
+                // Conversión para float: si se espera Float y se obtiene Double.
+                if ((param.getType().equals(Float.class) || param.getType().equals(float.class)) && value instanceof Double) {
+                    value = ((Double) value).floatValue();
+                }
+                // Conversión para enums.
+                if (param.getType().isEnum() && value instanceof String) {
+                    try {
+                        value = Enum.valueOf((Class<Enum>) param.getType(), (String) value);
+                    } catch(Exception e) {
+                        logError("Error with parameter " + paramName + " with value: " + value, e);
+                    }
+                }
+                // Conversión para arrays si el valor es una List.
+                if (param.getType().isArray() && value instanceof List<?> list) {
+                    Object array = Array.newInstance(param.getType().getComponentType(), list.size());
+                    for (int j = 0; j < list.size(); j++) {
+                        Object element = list.get(j);
+                        if ((param.getType().getComponentType().equals(Float.class) || param.getType().getComponentType().equals(float.class))
+                                && element instanceof Double) {
+                            element = ((Double) element).floatValue();
+                        }
+                        Array.set(array, j, element);
+                    }
+                    value = array;
+                }
+                // Conversión para colecciones si el valor es una List.
+                if (Collection.class.isAssignableFrom(param.getType()) && value instanceof List<?> list) {
+                    Collection<Object> collection;
+                    if (Set.class.isAssignableFrom(param.getType())) {
+                        collection = new HashSet<>();
+                    } else {
+                        collection = new ArrayList<>();
+                    }
+                    for (Object element : list) {
+                        if ((param.getType().equals(Float.class) || param.getType().equals(float.class)) && element instanceof Double) {
+                            element = ((Double) element).floatValue();
+                        }
+                        collection.add(element);
+                    }
+                    value = collection;
+                }
+            } catch (Exception e) {
+                logError("Error searching argument for parameter: " + paramName, e);
+            }
+            values[i] = value;
+        }
+        return values;
     }
 
     @SuppressWarnings("unchecked")
@@ -293,39 +371,12 @@ public class MariaDatabaseService extends StorageDatabase {
         try {
             for (Constructor<?> constructor : clazz.getConstructors()) {
                 if (constructor.isAnnotationPresent(StorageConstructor.class)) {
-                    Parameter[] parameters = constructor.getParameters();
-                    Object[] values = new Object[parameters.length];
-
-                    for (int i = 0; i < parameters.length; i++) {
-                        StorageKey paramAnnotation = parameters[i].getAnnotation(StorageKey.class);
-                        String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
-                                ? paramAnnotation.key()
-                                : parameters[i].getName();
-
-                        Object paramValue;
-
-                        if (isComplexObject(parameters[i].getType())) {
-                            paramValue = instantiateComplexObject(parameters[i].getType(), resultSet, identifier);
-                        } else {
-                            if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
-                                paramValue = identifier;
-                            } else {
-                                paramValue = resultSet.getObject(paramName);
-                            }
-                        }
-
-                        if (paramValue == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {
-                            paramValue = convertValue(parameters[i].getType(), paramAnnotation.defaultValue());
-                        }
-
-                        values[i] = paramValue;
-                    }
-
-                    return (T) constructor.newInstance(values);
+                    Object[] args = resolveConstructorArgs(constructor, resultSet, identifier);
+                    return (T) constructor.newInstance(args);
                 }
             }
         } catch (Exception e) {
-            logError("Can't instantiate object", e);
+            logError("Error with instance of: " + clazz.getSimpleName(), e);
         }
         return null;
     }
@@ -334,7 +385,7 @@ public class MariaDatabaseService extends StorageDatabase {
         try {
             return instantiateObject(complexType, resultSet, identifier);
         } catch (Exception e) {
-            logError("You can't instantiate object", e);
+            logError("Can't instance object with instance: " + complexType.getSimpleName(), e);
             return null;
         }
     }
@@ -347,4 +398,3 @@ public class MariaDatabaseService extends StorageDatabase {
         disconnect();
     }
 }
-

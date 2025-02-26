@@ -8,8 +8,8 @@ import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageIgnore;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
 import java.sql.*;
 import java.util.*;
@@ -24,23 +24,23 @@ public class PostgreDatabaseService extends StorageDatabase {
     private final String password;
 
     /**
-     * Create your postgre connection
-     * @param url to connect
-     * @param user of session
-     * @param password of session
-     * @param register to the implements
+     * Crea la conexión a PostgreSQL.
+     * @param url para conectarse.
+     * @param user de la sesión.
+     * @param password de la sesión.
+     * @param register para Implements.
      */
     public PostgreDatabaseService(String url, String user, String password, RegistrationType register) {
         this(url, user, password, register, null);
     }
 
     /**
-     * Create your postgre connection
-     * @param url to connect
-     * @param user of session
-     * @param password of session
-     * @param register to the implements
-     * @param identifier for the implements
+     * Crea la conexión a PostgreSQL.
+     * @param url para conectarse.
+     * @param user de la sesión.
+     * @param password de la sesión.
+     * @param register para Implements.
+     * @param identifier para Implements.
      */
     public PostgreDatabaseService(String url, String user, String password, RegistrationType register, String identifier) {
         this.url = url;
@@ -68,7 +68,7 @@ public class PostgreDatabaseService extends StorageDatabase {
         try {
             connection = DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
-            logError("Error connecting to the database", e);
+            logError("Error while connecting to the PostgreSQL", e);
         }
     }
 
@@ -77,7 +77,7 @@ public class PostgreDatabaseService extends StorageDatabase {
             try {
                 connection.close();
             } catch (SQLException e) {
-                logError("Error closing database connection", e);
+                logError("Error closing connection with PostgreSQL", e);
             }
         }
     }
@@ -129,13 +129,13 @@ public class PostgreDatabaseService extends StorageDatabase {
             }
             stmt.executeUpdate();
         } catch (SQLException e) {
-            logError("Error when the plugin was saving/updating an object", e);
+            logError("Can't save/update object at PostgreSQL at table " + tableName, e);
         }
     }
 
     private Map<String, Object> createColumnsFromObject(Object obj) {
         Map<String, Object> columns = new HashMap<>();
-        for (Field field : obj.getClass().getDeclaredFields()) {
+        for (var field : obj.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(StorageIgnore.class)) {
                 continue;
             }
@@ -145,7 +145,7 @@ public class PostgreDatabaseService extends StorageDatabase {
                 String columnName = field.getName();
 
                 if (field.isAnnotationPresent(StorageKey.class)) {
-                    StorageKey key = field.getAnnotation(StorageKey.class);
+                    var key = field.getAnnotation(StorageKey.class);
                     if (!key.key().isEmpty()) {
                         columnName = key.key();
                     }
@@ -170,11 +170,12 @@ public class PostgreDatabaseService extends StorageDatabase {
         if (obj == null) {
             return null;
         }
+        // Se puede ampliar para tratar objetos complejos.
         return obj.toString();
     }
 
     private String extractIdentifier(StorageObject obj) {
-        for (Field field : obj.getClass().getDeclaredFields()) {
+        for (var field : obj.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(StorageIdentifier.class)) {
                 field.setAccessible(true);
                 return PluginConsumer.ofUnchecked(
@@ -182,7 +183,7 @@ public class PostgreDatabaseService extends StorageDatabase {
                             Object value = field.get(obj);
                             return value != null ? value.toString() : null;
                         },
-                        e -> logError("Error extracting field value of: " + field.getName(), e),
+                        e -> logError("Error getting field: " + field.getName(), e),
                         () -> null
                 );
             }
@@ -216,7 +217,7 @@ public class PostgreDatabaseService extends StorageDatabase {
                 }
             }
         } catch (SQLException e) {
-            logError("Error at loading an object id", e);
+            logError("Error loading object with id: " + identifier, e);
         }
         return Optional.empty();
     }
@@ -241,7 +242,7 @@ public class PostgreDatabaseService extends StorageDatabase {
             stmt.setString(1, identifier);
             stmt.executeUpdate();
         } catch (SQLException e) {
-            logError("Error when plugin was deleting data from database", e);
+            logError("Error al eliminar el objeto con id: " + identifier, e);
         }
     }
 
@@ -274,15 +275,92 @@ public class PostgreDatabaseService extends StorageDatabase {
                 }
             }
         } catch (SQLException e) {
-            logError("Error when loading all objects", e);
+            logError("Can't load all objects", e);
         }
         return results;
     }
 
     private void ensureDatabaseConnected() {
         if (connection == null) {
-            throw new IllegalStateException("Not connected to the database.");
+            throw new IllegalStateException("No se ha establecido conexión con la base de datos.");
         }
+    }
+
+    /* ──────────────────────────────────────────────────────────────────────
+       MÉTODOS DE INSTANCIACIÓN Y CONVERSIÓN
+       ────────────────────────────────────────────────────────────────────── */
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private Object[] resolveConstructorArgs(Constructor<?> constructor, ResultSet resultSet, String identifier) {
+        Parameter[] parameters = constructor.getParameters();
+        Object[] values = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter param = parameters[i];
+            StorageKey paramAnnotation = param.getAnnotation(StorageKey.class);
+            String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
+                    ? paramAnnotation.key()
+                    : param.getName();
+            String defaultValue = (paramAnnotation != null ? paramAnnotation.defaultValue() : null);
+            Object value = null;
+            try {
+                if (param.isAnnotationPresent(StorageIdentifier.class)) {
+                    value = identifier;
+                } else if (isComplexObject(param.getType())) {
+                    value = instantiateComplexObject(param.getType(), resultSet, identifier);
+                } else {
+                    value = resultSet.getObject(paramName);
+                }
+                if (value == null && defaultValue != null && !defaultValue.isEmpty()) {
+                    value = convertValue(param.getType(), defaultValue);
+                }
+                // Conversión para float: si se espera Float y se obtiene Double.
+                if ((param.getType().equals(Float.class) || param.getType().equals(float.class)) && value instanceof Double) {
+                    value = ((Double) value).floatValue();
+                }
+                // Conversión para enums.
+                if (param.getType().isEnum() && value instanceof String) {
+                    try {
+                        value = Enum.valueOf((Class<Enum>) param.getType(), (String) value);
+                    } catch(Exception e) {
+                        logError("Error with parameter " + paramName + " with value: " + value, e);
+                    }
+                }
+                // Conversión para arrays si el valor es una List.
+                if (param.getType().isArray() && value instanceof List<?> list) {
+                    Object array = Array.newInstance(param.getType().getComponentType(), list.size());
+                    for (int j = 0; j < list.size(); j++) {
+                        Object element = list.get(j);
+                        if ((param.getType().getComponentType().equals(Float.class) || param.getType().getComponentType().equals(float.class))
+                                && element instanceof Double) {
+                            element = ((Double) element).floatValue();
+                        }
+                        Array.set(array, j, element);
+                    }
+                    value = array;
+                }
+                // Conversión para colecciones si el valor es una List.
+                if (Collection.class.isAssignableFrom(param.getType()) && value instanceof List<?> list) {
+                    Collection<Object> collection;
+                    if (Set.class.isAssignableFrom(param.getType())) {
+                        collection = new HashSet<>();
+                    } else {
+                        collection = new ArrayList<>();
+                    }
+                    for (Object element : list) {
+                        if ((param.getType().equals(Float.class) || param.getType().equals(float.class)) && element instanceof Double) {
+                            element = ((Double) element).floatValue();
+                        }
+                        collection.add(element);
+                    }
+                    value = collection;
+                }
+            } catch (Exception e) {
+                logError("Error resolving parameter: " + paramName, e);
+            }
+            values[i] = value;
+        }
+        return values;
     }
 
     @SuppressWarnings("unchecked")
@@ -290,39 +368,12 @@ public class PostgreDatabaseService extends StorageDatabase {
         try {
             for (Constructor<?> constructor : clazz.getConstructors()) {
                 if (constructor.isAnnotationPresent(StorageConstructor.class)) {
-                    Parameter[] parameters = constructor.getParameters();
-                    Object[] values = new Object[parameters.length];
-
-                    for (int i = 0; i < parameters.length; i++) {
-                        StorageKey paramAnnotation = parameters[i].getAnnotation(StorageKey.class);
-                        String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
-                                ? paramAnnotation.key()
-                                : parameters[i].getName();
-
-                        Object paramValue;
-
-                        if (isComplexObject(parameters[i].getType())) {
-                            paramValue = instantiateComplexObject(parameters[i].getType(), resultSet, identifier);
-                        } else {
-                            if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
-                                paramValue = identifier;
-                            } else {
-                                paramValue = resultSet.getObject(paramName);
-                            }
-                        }
-
-                        if (paramValue == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {
-                            paramValue = convertValue(parameters[i].getType(), paramAnnotation.defaultValue());
-                        }
-
-                        values[i] = paramValue;
-                    }
-
-                    return (T) constructor.newInstance(values);
+                    Object[] args = resolveConstructorArgs(constructor, resultSet, identifier);
+                    return (T) constructor.newInstance(args);
                 }
             }
         } catch (Exception e) {
-            logError("Can't instantiate object", e);
+            logError("Can't instantiate: " + clazz.getSimpleName(), e);
         }
         return null;
     }
@@ -331,7 +382,7 @@ public class PostgreDatabaseService extends StorageDatabase {
         try {
             return instantiateObject(complexType, resultSet, identifier);
         } catch (Exception e) {
-            logError("Can't instantiate complex object", e);
+            logError("Can't instantiate object from type: " + complexType.getSimpleName(), e);
             return null;
         }
     }

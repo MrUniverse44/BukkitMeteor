@@ -24,8 +24,8 @@ public class YamlDatabaseService extends StorageDatabase {
     private final File dataFolder;
 
     /**
-     * Initialize YAML database connection
-     * @param register to register this connection to the Implements
+     * Inicializa la conexión con la base de datos YAML.
+     * @param register para registrar esta conexión en Implements
      */
     public YamlDatabaseService(RegistrationType register) {
         this.dataFolder = new File(fetch(File.class, "folder"), "data");
@@ -48,9 +48,9 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * Initialize YAML database connection
-     * @param register to register this connection to the Implements
-     * @param identifier used for the Implements in {@link Implements#fetch(Class, String)}
+     * Inicializa la conexión con la base de datos YAML.
+     * @param register para registrar esta conexión en Implements
+     * @param identifier usado para la búsqueda en {@link Implements#fetch(Class, String)}
      */
     public YamlDatabaseService(RegistrationType register, String identifier) {
         this.dataFolder = new File(fetch(File.class, "folder"), "data");
@@ -83,7 +83,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Guarda o actualiza un objeto de forma asíncrona.
      */
     @Override
     public CompletableFuture<Void> saveOrUpdateAsync(StorageObject obj) {
@@ -91,7 +91,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Guarda o actualiza un objeto de forma síncrona.
      */
     @Override
     public void saveOrUpdateSync(StorageObject obj) {
@@ -99,10 +99,12 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Establishes a connection to the storage database.
      */
     @Override
-    public void connect() { }
+    public void connect() {
+
+    }
 
     private void save(StorageObject obj) {
         Class<?> clazz = obj.getClass();
@@ -122,7 +124,7 @@ public class YamlDatabaseService extends StorageDatabase {
 
                 if (field.isAnnotationPresent(StorageIdentifier.class)) {
                     if (value == null) {
-                        throw new IllegalArgumentException("Field of @StorageIdentifier can't be null.");
+                        throw new IllegalArgumentException("Field @StorageIdentifier can't be null.");
                     }
                     identifierValue = value.toString();
                 }
@@ -143,12 +145,12 @@ public class YamlDatabaseService extends StorageDatabase {
                     addMap.put(name, value);
                 }
             } catch (IllegalAccessException e) {
-                logError("Can't save all fields data of the object to storage", e);
+                logError("Can't save field: " + field.getName(), e);
             }
         }
 
         if (identifierValue == null) {
-            throw new IllegalArgumentException("Object of class " + clazz.getSimpleName() + " don't have @StorageIdentifier.");
+            throw new IllegalArgumentException("Object from class " + clazz.getSimpleName() + " don't have @StorageIdentifier.");
         }
 
         File classFolder = new File(dataFolder, clazz.getSimpleName());
@@ -164,7 +166,7 @@ public class YamlDatabaseService extends StorageDatabase {
         try {
             config.save(file);
         } catch (IOException e) {
-            logError("Can't save object file", e);
+            logError("Can't save file for object class: " + obj.getClass().getSimpleName(), e);
         }
     }
 
@@ -209,7 +211,7 @@ public class YamlDatabaseService extends StorageDatabase {
                 Object fieldValue = field.get(obj);
                 resultMap.put(field.getName(), handleComplexObject(fieldValue));
             } catch (IllegalAccessException e) {
-                logError("Can't access to a field data", e);
+                logError("Can't get data from field: " + field.getName(), e);
             }
         }
 
@@ -229,7 +231,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Carga asíncrona por identificador.
      */
     @Override
     public <T extends StorageObject> CompletableFuture<Optional<T>> loadByIdAsync(Class<T> clazz, String identifier) {
@@ -237,7 +239,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Carga síncrona por identificador.
      */
     @Override
     public <T extends StorageObject> Optional<T> loadByIdSync(Class<T> clazz, String identifier) {
@@ -248,11 +250,12 @@ public class YamlDatabaseService extends StorageDatabase {
         }
 
         FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-        return Optional.ofNullable(instantiateObject(clazz, config, identifier));
+        T object = instantiateObject(clazz, config, identifier);
+        return Optional.ofNullable(object);
     }
 
     /**
-     * {@inheritDoc}
+     * Elimina asíncronamente por identificador.
      */
     @Override
     public <T extends StorageObject> CompletableFuture<Void> deleteByIdAsync(Class<T> clazz, String identifier) {
@@ -260,7 +263,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Elimina síncronamente por identificador.
      */
     @Override
     public <T extends StorageObject> void deleteByIdSync(Class<T> clazz, String identifier) {
@@ -300,7 +303,7 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Carga asíncrona de todos los objetos.
      */
     @Override
     public <T extends StorageObject> CompletableFuture<Set<T>> loadAllAsync(Class<T> clazz) {
@@ -308,56 +311,126 @@ public class YamlDatabaseService extends StorageDatabase {
     }
 
     /**
-     * {@inheritDoc}
+     * Carga síncrona de todos los objetos.
      */
     @Override
     public <T extends StorageObject> Set<T> loadAllSync(Class<T> clazz) {
         return loadAll(clazz);
     }
 
+    /* ──────────────────────────────────────────────────────────────────────────────
+       MÉTODOS DE INSTANCIACIÓN Y CONVERSIÓN (actualizados para imitar la versión ModernMongoDatabaseService)
+       ────────────────────────────────────────────────────────────────────────────── */
 
+    /**
+     * Resuelve los argumentos del constructor anotado con @StorageConstructor
+     * a partir de la configuración YAML.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Object[] resolveConstructorArgs(Constructor<?> constructor, ConfigurationSection config, String identifier) {
+        Parameter[] parameters = constructor.getParameters();
+        Object[] args = new Object[parameters.length];
+
+        for (int i = 0; i < parameters.length; i++) {
+            Parameter param = parameters[i];
+            StorageKey keyAnnotation = param.getAnnotation(StorageKey.class);
+            String paramName = (keyAnnotation != null && !keyAnnotation.key().isEmpty())
+                    ? keyAnnotation.key()
+                    : param.getName();
+            String defaultValue = (keyAnnotation != null ? keyAnnotation.defaultValue() : null);
+
+            Object value = null;
+            try {
+                if (param.isAnnotationPresent(StorageIdentifier.class)) {
+                    value = identifier;
+                } else if (isComplexObject(param.getType())) {
+                    ConfigurationSection section = config.getConfigurationSection(paramName);
+                    if (section != null) {
+                        value = instantiateObject(param.getType(), section, identifier);
+                    } else {
+                        value = config.get(paramName);
+                    }
+                } else {
+                    value = config.get(paramName);
+                }
+
+                if (value == null && defaultValue != null && !defaultValue.isEmpty()) {
+                    value = convertValue(param.getType(), defaultValue);
+                }
+
+                // Conversión para float: si se espera float y se obtiene Double, se convierte.
+                if ((param.getType().equals(Float.class) || param.getType().equals(float.class)) && value instanceof Double) {
+                    value = ((Double) value).floatValue();
+                }
+
+                // Conversión para enums.
+                if (param.getType().isEnum() && value instanceof String) {
+                    try {
+                        value = Enum.valueOf((Class<Enum>) param.getType(), (String) value);
+                    } catch(Exception e) {
+                        logError("Can't find enum'" + value + "' from field " + paramName, e);
+                    }
+                }
+
+                // Conversión para arrays si el valor es un List.
+                if (param.getType().isArray() && value instanceof List<?> list) {
+                    Object array = Array.newInstance(param.getType().getComponentType(), list.size());
+                    for (int j = 0; j < list.size(); j++) {
+                        Object element = list.get(j);
+                        if ((param.getType().getComponentType().equals(Float.class) || param.getType().getComponentType().equals(float.class)) && element instanceof Double) {
+                            element = ((Double) element).floatValue();
+                        }
+                        if (isComplexObject(param.getType().getComponentType()) && element instanceof ConfigurationSection) {
+                            element = instantiateObject(param.getType().getComponentType(), (ConfigurationSection) element, identifier);
+                        }
+                        Array.set(array, j, element);
+                    }
+                    value = array;
+                }
+
+                // Conversión para colecciones si el valor es un List.
+                if (Collection.class.isAssignableFrom(param.getType()) && value instanceof List<?> list) {
+                    Collection<Object> collection;
+                    if (Set.class.isAssignableFrom(param.getType())) {
+                        collection = new HashSet<>();
+                    } else {
+                        collection = new ArrayList<>();
+                    }
+                    for (Object element : list) {
+                        if ((param.getType().equals(Float.class) || param.getType().equals(float.class)) && element instanceof Double) {
+                            element = ((Double) element).floatValue();
+                        }
+                        if (element instanceof ConfigurationSection) {
+                            element = instantiateObject(param.getType(), (ConfigurationSection) element, identifier);
+                        }
+                        collection.add(element);
+                    }
+                    value = collection;
+                }
+            } catch (Exception e) {
+                logError("Error resolving parameter: " + paramName, e);
+            }
+            args[i] = value;
+        }
+        return args;
+    }
+
+    /**
+     * Instancia un objeto de la clase especificada a partir de la configuración YAML.
+     */
     @SuppressWarnings("unchecked")
     private <T extends StorageObject> T instantiateObject(Class<?> clazz, ConfigurationSection config, String identifier) {
-        try {
-            for (Constructor<?> constructor : clazz.getConstructors()) {
-                if (constructor.isAnnotationPresent(StorageConstructor.class)) {
-                    Parameter[] parameters = constructor.getParameters();
-                    Object[] values = new Object[parameters.length];
-
-                    for (int i = 0; i < parameters.length; i++) {
-                        StorageKey paramAnnotation = parameters[i].getAnnotation(StorageKey.class);
-                        String paramName = (paramAnnotation != null && !paramAnnotation.key().isEmpty())
-                                ? paramAnnotation.key()
-                                : parameters[i].getName();
-
-                        Object value;
-
-                        if (parameters[i].isAnnotationPresent(StorageIdentifier.class)) {
-                            value = identifier;
-                        } else if (isComplexObject(parameters[i].getType())) {
-                            ConfigurationSection section = config.getConfigurationSection(paramName);
-                            if (section == null) {
-                                value = config.get(paramName);
-                            } else {
-                                value = instantiateObject(parameters[i].getType(), section, identifier);
-                            }
-                        } else {
-                            value = config.get(paramName);
-                        }
-
-                        if (value == null && paramAnnotation != null && !paramAnnotation.defaultValue().isEmpty()) {
-                            value = convertValue(parameters[i].getType(), paramAnnotation.defaultValue());
-                        }
-
-                        values[i] = value;
-                    }
-
-                    return (T) constructor.newInstance(values);
+        for (Constructor<?> constructor : clazz.getConstructors()) {
+            if (constructor.isAnnotationPresent(StorageConstructor.class)) {
+                try {
+                    Object[] args = resolveConstructorArgs(constructor, config, identifier);
+                    return (T) constructor.newInstance(args);
+                } catch (Exception e) {
+                    logError("Can't instance YAML instance: " + clazz.getSimpleName(), e);
                 }
             }
-        } catch (Exception e) {
-            logError("Can't instantiate yaml object", e);
         }
+        logError("Can't find constructor with @StorageConstructor at: " + clazz.getSimpleName(), null);
         return null;
     }
 
@@ -366,5 +439,3 @@ public class YamlDatabaseService extends StorageDatabase {
         // No se requiere acción para YAML.
     }
 }
-
-

@@ -75,7 +75,7 @@ public class Implements extends AbstractImplementer {
             }
         }
 
-        throw new RuntimeException("No suitable constructor found or not all parameters are annotated.");
+        throw new RuntimeException("No suitable constructor found or not all parameters are annotated. Class: " + clazz.getSimpleName());
     }
 
     // Private Methods for Processing
