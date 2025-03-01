@@ -442,26 +442,20 @@ public class ModernMongoDatabaseService extends StorageDatabase {
                         }
 
                         finalValue = array;
-                    }
+                    } else {
+                        Class<? extends Collection<?>> requiredType = (Class<? extends Collection<?>>) parameters[i].getType();
 
-                    Class<? extends Collection<?>> requiredType = (Class<? extends Collection<?>>) parameters[i].getType();
-
-                    if (finalValue != null) {
-                        Collection<?> resultCollection = (Collection<?>) finalValue;
-
-                        args[i] = convertCollection(requiredType, resultCollection);
-
-                        if (args[i] == null) {
-                            fetch(MeteorLogger.class).error(
-                                "Can't create a set instance of class: " + requiredType.getSimpleName(),
-                                "Please use another subclass of Set<> or other Collection method",
-                                "Or contact the developer for adding support to this collection class with registerCollection methods"
-                            );
-                            args[i] = finalValue;
+                        if (defValue != null) {
+                            args[i] = convertValue(parameters[i].getType(), defValue);
                         }
+                    }
+                    if (finalValue != null) {
+                        args[i] = finalValue;
                     } else {
                         if (defValue != null) {
                             args[i] = convertValue(parameters[i].getType(), defValue);
+                        } else {
+                            args[i] = null;
                         }
                     }
                 }
