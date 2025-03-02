@@ -13,10 +13,7 @@ import me.blueslime.bukkitmeteor.storage.interfaces.*;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 import org.bson.Document;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
@@ -330,45 +327,68 @@ public class ModernMongoDatabaseService extends StorageDatabase {
 
         for (int i = 0; i < parameters.length; i++) {
             Parameter param = parameters[i];
-            String name = param.isAnnotationPresent(StorageKey.class) ? param.getAnnotation(StorageKey.class).key() : param.getName();
-            String defValue = param.isAnnotationPresent(StorageKey.class) ? param.getAnnotation(StorageKey.class).defaultValue() : null;
+            String name = param.isAnnotationPresent(StorageKey.class)
+                    ? param.getAnnotation(StorageKey.class).key()
+                    : param.getName();
+            String defValue = param.isAnnotationPresent(StorageKey.class)
+                    ? param.getAnnotation(StorageKey.class).defaultValue()
+                    : null;
 
             if (param.isAnnotationPresent(StorageIdentifier.class)) {
                 args[i] = identifier;
             } else if (isComplexObject(param.getType())) {
-                args[i] = instantiateObject(parameters[i].getType(), document.get(name, Document.class), identifier);
+                args[i] = instantiateObject(param.getType(), document.get(name, Document.class), identifier);
             } else {
                 args[i] = document.get(name);
-
                 if (args[i] == null && defValue != null && !defValue.isEmpty()) {
-                    args[i] = convertValue(parameters[i].getType(), defValue);
+                    args[i] = convertValue(param.getType(), defValue);
                 }
             }
-            if (args[i] != null && parameters[i].getType().isArray() && List.class.isAssignableFrom(args[i].getClass())) {
-                List<Object> result = new ArrayList<>();
+
+            // Manejo de arrays
+            if (args[i] != null && param.getType().isArray() && List.class.isAssignableFrom(args[i].getClass())) {
                 List<?> list = (List<?>) args[i];
+                List<Object> result = new ArrayList<>();
+                Class<?> componentType = param.getType().getComponentType();
                 for (Object element : list) {
-                    if (element != null && isComplexObject(element.getClass())) {
+                    if (element != null && isComplexObject(componentType)) {
                         if (element instanceof Document) {
-                            result.add(createObjectFromDocument((Document) element, element.getClass(), identifier));
+                            // Usamos el componente esperado en lugar de element.getClass()
+                            result.add(createObjectFromDocument((Document) element, componentType, identifier));
                         } else {
                             result.add(element);
                         }
                     }
                 }
-                args[i] = result.toArray(
-                    (Object[]) Array.newInstance(parameters[i].getType().getComponentType(), result.size())
-                );
+                args[i] = result.toArray((Object[]) Array.newInstance(componentType, result.size()));
             }
 
-            if (args[i] != null && Map.class.isAssignableFrom(parameters[i].getType())) {
+            // Manejo de Maps
+            if (args[i] != null && Map.class.isAssignableFrom(param.getType())) {
                 Object stored = args[i];
-                Map<Object, Object> reconstructedMap = createMap(parameters[i].getType());
+                Map<Object, Object> reconstructedMap = createMap(param.getType());
+
+                // Extraemos los tipos genéricos para clave y valor
+                Class<?> expectedKeyType = Object.class;
+                Class<?> expectedValueType = Object.class;
+                Type genericType = constructor.getGenericParameterTypes()[i];
+                if (genericType instanceof ParameterizedType) {
+                    Type[] typeArguments = ((ParameterizedType) genericType).getActualTypeArguments();
+                    if (typeArguments != null && typeArguments.length == 2) {
+                        if (typeArguments[0] instanceof Class) {
+                            expectedKeyType = (Class<?>) typeArguments[0];
+                        }
+                        if (typeArguments[1] instanceof Class) {
+                            expectedValueType = (Class<?>) typeArguments[1];
+                        }
+                    }
+                }
+
                 if (stored instanceof Document mapDoc) {
                     for (String key : mapDoc.keySet()) {
                         Object mapValue = mapDoc.get(key);
-                        if (mapValue instanceof Document) {
-                            mapValue = createObjectFromDocument((Document) mapValue, mapValue.getClass(), identifier);
+                        if (mapValue instanceof Document && isComplexObject(expectedValueType)) {
+                            mapValue = createObjectFromDocument((Document) mapValue, expectedValueType, identifier);
                         }
                         reconstructedMap.put(key, mapValue);
                     }
@@ -376,11 +396,11 @@ public class ModernMongoDatabaseService extends StorageDatabase {
                     for (Map.Entry<?, ?> entry : ((Map<?, ?>) stored).entrySet()) {
                         Object mapKey = entry.getKey();
                         Object mapValue = entry.getValue();
-                        if (mapKey instanceof Document) {
-                            mapKey = createObjectFromDocument((Document) mapKey, mapKey.getClass(), identifier);
+                        if (mapKey instanceof Document && isComplexObject(expectedKeyType)) {
+                            mapKey = createObjectFromDocument((Document) mapKey, expectedKeyType, identifier);
                         }
-                        if (mapValue instanceof Document) {
-                            mapValue = createObjectFromDocument((Document) mapValue, mapValue.getClass(), identifier);
+                        if (mapValue instanceof Document && isComplexObject(expectedValueType)) {
+                            mapValue = createObjectFromDocument((Document) mapValue, expectedValueType, identifier);
                         }
                         reconstructedMap.put(mapKey, mapValue);
                     }
@@ -388,80 +408,77 @@ public class ModernMongoDatabaseService extends StorageDatabase {
                 args[i] = reconstructedMap;
             }
 
-            if (args[i] != null && parameters[i].getType().isEnum() && args[i] instanceof String finalValue) {
-                Class<? extends Enum> enumType = parameters[i].getType().asSubclass(Enum.class);
+            // Manejo de Enum
+            if (args[i] != null && param.getType().isEnum() && args[i] instanceof String finalValue) {
+                Class<? extends Enum> enumType = param.getType().asSubclass(Enum.class);
                 args[i] = PluginConsumer.ofUnchecked(
-                    () -> Enum.valueOf(enumType, finalValue),
-                    e -> logError("Can't found enum constant for " + finalValue + " please contact the developer.", e),
-                    () -> null
+                        () -> Enum.valueOf(enumType, finalValue),
+                        e -> logError("Can't found enum constant for " + finalValue + " please contact the developer.", e),
+                        () -> null
                 );
             }
 
+            // Manejo de Collections
             if (args[i] != null && Collection.class.isAssignableFrom(args[i].getClass())) {
-                if (!Collection.class.isAssignableFrom(parameters[i].getType())) {
+                if (!Collection.class.isAssignableFrom(param.getType())) {
                     args[i] = null;
                     fetch(MeteorLogger.class).error(
-                        "Required parameter for StorageConstructor is: " + parameters[i].getType().getSimpleName(),
-                        "This parameter is using Storage Key: " + name,
-                        "But in the object storage this key contains a Collection and the parameter is not a collection",
-                        "By default we are not gonna assign value, so the object with field key: " + name + ", will be null",
-                        "This is an error from your developer, please contact it to fix this."
+                            "Required parameter for StorageConstructor is: " + param.getType().getSimpleName(),
+                            "This parameter is using Storage Key: " + name,
+                            "But in the object storage this key contains a Collection and the parameter is not a collection",
+                            "By default we are not gonna assign value, so the object with field key: " + name + ", will be null",
+                            "This is an error from your developer, please contact it to fix this."
                     );
                 } else {
-
-                    // args[i] = Objeto desde la base de dato
-                    // parameters[i] = lo que se busca de la misma key
-                    // name = key
-                    // defValue = defValue en caso de ser null
+                    // Extraemos el tipo esperado para los elementos de la Collection
+                    Class<?> expectedElementType = Object.class;
+                    Type genericType = constructor.getGenericParameterTypes()[i];
+                    if (genericType instanceof ParameterizedType) {
+                        Type[] typeArguments = ((ParameterizedType) genericType).getActualTypeArguments();
+                        if (typeArguments != null && typeArguments.length > 0 && typeArguments[0] instanceof Class) {
+                            expectedElementType = (Class<?>) typeArguments[0];
+                        }
+                    }
                     Object finalValue = null;
                     Collection<?> collection = (Collection<?>) args[i];
                     if (List.class.isAssignableFrom(args[i].getClass())) {
-
-                        List<Object> elements = (List<Object>) args[i];
                         List<Object> array = new ArrayList<>();
-
-                        for (Object element : elements) {
-                            if (element instanceof Document) {
-                                array.add(createObjectFromDocument((Document) element, element.getClass(), identifier));
+                        for (Object element : collection) {
+                            if (element != null && isComplexObject(expectedElementType)) {
+                                if (element instanceof Document) {
+                                    array.add(createObjectFromDocument((Document) element, expectedElementType, identifier));
+                                } else {
+                                    array.add(element);
+                                }
                             } else {
                                 array.add(element);
                             }
                         }
-
                         finalValue = array;
                     } else if (Set.class.isAssignableFrom(args[i].getClass())) {
-                        Set<Object> elements = (Set<Object>) args[i];
                         Set<Object> array = new HashSet<>();
-
-                        for (Object element : elements) {
-                            if (element instanceof Document) {
-                                array.add(createObjectFromDocument((Document) element, element.getClass(), identifier));
+                        for (Object element : collection) {
+                            if (element != null && isComplexObject(expectedElementType)) {
+                                if (element instanceof Document) {
+                                    array.add(createObjectFromDocument((Document) element, expectedElementType, identifier));
+                                } else {
+                                    array.add(element);
+                                }
                             } else {
                                 array.add(element);
                             }
                         }
-
                         finalValue = array;
                     } else {
-                        Class<? extends Collection<?>> requiredType = (Class<? extends Collection<?>>) parameters[i].getType();
-
                         if (defValue != null) {
-                            args[i] = convertValue(parameters[i].getType(), defValue);
+                            args[i] = convertValue(param.getType(), defValue);
                         }
                     }
-                    if (finalValue != null) {
-                        args[i] = finalValue;
-                    } else {
-                        if (defValue != null) {
-                            args[i] = convertValue(parameters[i].getType(), defValue);
-                        } else {
-                            args[i] = null;
-                        }
-                    }
+                    args[i] = finalValue != null ? finalValue
+                            : defValue != null ? convertValue(param.getType(), defValue) : null;
                 }
             }
         }
-
         return args;
     }
 
