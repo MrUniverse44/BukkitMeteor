@@ -340,6 +340,10 @@ public class ModernMongoDatabaseService extends StorageDatabase {
                 args[i] = instantiateObject(param.getType(), document.get(name, Document.class), identifier);
             } else {
                 args[i] = document.get(name);
+                if ((param.getType().equals(Float.class) || param.getType().equals(float.class))
+                        && args[i] instanceof Double) {
+                    args[i] = ((Double) args[i]).floatValue();
+                }
                 if (args[i] == null && defValue != null && !defValue.isEmpty()) {
                     args[i] = convertValue(param.getType(), defValue);
                 }
