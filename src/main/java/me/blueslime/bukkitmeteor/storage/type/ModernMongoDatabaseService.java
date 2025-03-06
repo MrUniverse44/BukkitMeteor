@@ -320,7 +320,7 @@ public class ModernMongoDatabaseService extends StorageDatabase {
         return null;
     }
 
-    @SuppressWarnings({"unchecked", "CastCanBeRemovedNarrowingVariableType", "rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Object[] resolveConstructorArgs(Constructor<?> constructor, Document document, String identifier) {
         Parameter[] parameters = constructor.getParameters();
         Object[] args = new Object[parameters.length];
