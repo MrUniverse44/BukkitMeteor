@@ -28,7 +28,7 @@ public class SpawnParticleBlockAction extends BlockAction {
     public void execute(BukkitMeteorPlugin plugin, String parameter, World world) {
         String[] split = replace(parameter).replace(" ", "").split(",");
 
-        int amount = split.length >= 2 ? PluginTools.isNumber(split[1]) ? Integer.parseInt(split[1]) : 5 : 5;
+        int amount = split.length >= 2 ? PluginTools.toInteger(split[1], 5) : 5;
 
         String replaced = split[0].toUpperCase(Locale.ENGLISH);
 
