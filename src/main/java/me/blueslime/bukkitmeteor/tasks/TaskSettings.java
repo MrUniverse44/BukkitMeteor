@@ -2,6 +2,20 @@ package me.blueslime.bukkitmeteor.tasks;
 
 public class TaskSettings {
 
+    public static final TaskSettings RUN_ASYNC = TaskSettings
+        .create()
+        .setAsync(true)
+        .setDelay(0L)
+        .setPeriod(0L)
+        .setType(TaskType.NORMAL);
+
+    public static final TaskSettings RUN_SYNC = TaskSettings
+        .create()
+        .setAsync(false)
+        .setDelay(0L)
+        .setPeriod(0L)
+        .setType(TaskType.NORMAL);
+
     private TaskType type = TaskType.NORMAL;
     private boolean async = true;
     private long period = 0L;

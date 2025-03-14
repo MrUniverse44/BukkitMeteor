@@ -1,11 +1,12 @@
 package me.blueslime.bukkitmeteor.actions.action;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
+import me.blueslime.bukkitmeteor.implementation.module.Service;
 import org.bukkit.entity.Player;
 
 import java.util.*;
 
-public abstract class Action {
+public abstract class Action implements Service {
 
     private final Set<String> prefixes = new HashSet<>();
 

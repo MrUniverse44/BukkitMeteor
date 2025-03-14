@@ -3,12 +3,13 @@ package me.blueslime.bukkitmeteor.conditions.type;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.Actions;
 import me.blueslime.bukkitmeteor.conditions.condition.Condition;
-import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PlaceholderCondition extends Condition {
 
@@ -30,7 +31,7 @@ public class PlaceholderCondition extends Condition {
 
         String[] operations = placeholder.split("<orElse>");
 
-        boolean result = executeValues(operations[0]);
+        boolean result = executeValues(player, operations[0]);
 
         if (operations.length > 1 && !result) {
             String[] secondaryOperations = operations[1].split(";;");
@@ -40,18 +41,16 @@ public class PlaceholderCondition extends Condition {
         return result;
     }
 
-    private boolean executeValues(String parameter) {
-        String regex = "(==|>=|<=|>|<|!=|=i=|\\|-|-\\|)";
-        String[] parts = parameter.split(regex);
-
-        if (parts.length != 2) {
-            fetch(MeteorLogger.class).error("Invalid format. Use 'value1 operator value2': " + parameter);
+    private boolean executeValues(Player player, String parameter) {
+        Pattern pattern = Pattern.compile("^(.*?)\\s*(==|>=|<=|>|<|!=|=i=|\\|-|-\\|)\\s*(.*?)$");
+        Matcher matcher = pattern.matcher(parameter);
+        if (!matcher.find()) {
+            getLogs().error("Invalid format. Use 'value1 operator value2': " + parameter);
             return false;
         }
-
-        String value1 = parts[0].trim();
-        String value2 = parts[1].trim();
-        String operator = parameter.replace(value1, "").replace(value2, "").trim();
+        String value1 = matcher.group(1).trim();
+        String operator = matcher.group(2).trim();
+        String value2 = matcher.group(3).trim();
 
         return compareValues(value1, value2, operator);
     }

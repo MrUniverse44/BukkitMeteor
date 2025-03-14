@@ -1,11 +1,15 @@
 package me.blueslime.bukkitmeteor.utils;
 
+import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Cuboid {
@@ -97,6 +101,10 @@ public class Cuboid {
         return this.getHeight() * this.getXWidth() * this.getZWidth();
     }
 
+    public int getVolume() {
+        return getTotalBlockSize();
+    }
+
     public Location getPoint1() {
         return new Location(this.world, this.xMin, this.yMin, this.zMin);
     }
@@ -114,8 +122,10 @@ public class Cuboid {
     }
 
     public boolean isIn(final Location loc) {
-        return loc.getWorld() == this.world && loc.getBlockX() >= this.xMin - 1 && loc.getBlockX() <= this.xMax + 1 && loc.getBlockY() >= this.yMin && loc.getBlockY() <= this.yMax && loc
-                .getBlockZ() >= this.zMin - 1 && loc.getBlockZ() <= this.zMax + 1;
+        return loc.getWorld() == this.world &&
+                loc.getBlockX() >= this.xMin - 1 && loc.getBlockX() <= this.xMax + 1 &&
+                loc.getBlockY() >= this.yMin && loc.getBlockY() <= this.yMax &&
+                loc.getBlockZ() >= this.zMin - 1 && loc.getBlockZ() <= this.zMax + 1;
     }
 
     public boolean isIn(final Player player) {
@@ -123,8 +133,10 @@ public class Cuboid {
     }
 
     public boolean isInWithMarge(final Location loc, final double marge) {
-        return loc.getWorld() == this.world && loc.getX() >= this.xMinCentered - marge && loc.getX() <= this.xMaxCentered + marge && loc.getY() >= this.yMinCentered - marge && loc
-                .getY() <= this.yMaxCentered + marge && loc.getZ() >= this.zMinCentered - marge && loc.getZ() <= this.zMaxCentered + marge;
+        return loc.getWorld() == this.world &&
+                loc.getX() >= this.xMinCentered - marge && loc.getX() <= this.xMaxCentered + marge &&
+                loc.getY() >= this.yMinCentered - marge && loc.getY() <= this.yMaxCentered + marge &&
+                loc.getZ() >= this.zMinCentered - marge && loc.getZ() <= this.zMaxCentered + marge;
     }
 
     public boolean contains(int x, int y, int z, String requiredMaterial) {
@@ -133,5 +145,58 @@ public class Cuboid {
         }
         Block block = this.world.getBlockAt(x, y, z);
         return block.getType().toString().equalsIgnoreCase(requiredMaterial);
+    }
+
+    public Set<Entity> getEntities() {
+        Set<Entity> entities = new HashSet<>();
+        int minChunkX = this.xMin >> 4;
+        int maxChunkX = this.xMax >> 4;
+        int minChunkZ = this.zMin >> 4;
+        int maxChunkZ = this.zMax >> 4;
+
+        for (int cx = minChunkX; cx <= maxChunkX; cx++) {
+            for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
+                // Comprobamos que el chunk esté cargado para evitar cargar chunks innecesariamente.
+                if (world.isChunkLoaded(cx, cz)) {
+                    Chunk chunk = world.getChunkAt(cx, cz);
+                    for (Entity entity : chunk.getEntities()) {
+                        if (this.isIn(entity.getLocation())) {
+                            entities.add(entity);
+                        }
+                    }
+                }
+            }
+        }
+        return entities;
+    }
+
+    public Set<Player> getPlayers() {
+        Set<Player> players = new HashSet<>();
+        for (Entity entity : getEntities()) {
+            if (entity instanceof Player) {
+                players.add((Player) entity);
+            }
+        }
+        return players;
+    }
+
+    public boolean intersects(Cuboid other) {
+        if (this.world != other.world) return false;
+        return this.xMax >= other.xMin && this.xMin <= other.xMax &&
+                this.yMax >= other.yMin && this.yMin <= other.yMax &&
+                this.zMax >= other.zMin && this.zMin <= other.zMax;
+    }
+
+    public List<Location> getCorners() {
+        List<Location> corners = new ArrayList<>(8);
+        corners.add(new Location(world, xMin, yMin, zMin));
+        corners.add(new Location(world, xMin, yMin, zMax));
+        corners.add(new Location(world, xMin, yMax, zMin));
+        corners.add(new Location(world, xMin, yMax, zMax));
+        corners.add(new Location(world, xMax, yMin, zMin));
+        corners.add(new Location(world, xMax, yMin, zMax));
+        corners.add(new Location(world, xMax, yMax, zMin));
+        corners.add(new Location(world, xMax, yMax, zMax));
+        return corners;
     }
 }

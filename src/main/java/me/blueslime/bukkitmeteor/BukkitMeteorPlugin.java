@@ -385,6 +385,15 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     /**
+     * Loads a file from the main plugin data folder
+     * @param fileName file
+     * @return FileConfiguration
+     */
+    public FileConfiguration load(String fileName) {
+        return load(new File(getDataFolder(), fileName), fileName);
+    }
+
+    /**
      * Loads a FileConfiguration from a file
      * @param fetchFile file
      * @param resource if the file don't exist, it supports a resource to be loaded in that file, it supports null

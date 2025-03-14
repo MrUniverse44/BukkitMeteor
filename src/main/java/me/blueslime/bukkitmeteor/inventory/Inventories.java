@@ -1,7 +1,7 @@
 package me.blueslime.bukkitmeteor.inventory;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
-import me.blueslime.bukkitmeteor.implementation.module.Module;
+import me.blueslime.bukkitmeteor.implementation.module.Service;
 import me.blueslime.bukkitmeteor.inventory.event.InventoriesFolderGenerationEvent;
 import me.blueslime.bukkitmeteor.inventory.handlers.DefaultInventory;
 import me.blueslime.bukkitmeteor.inventory.inventory.MeteorInventory;
@@ -13,7 +13,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import java.io.File;
 import java.util.Locale;
 
-public class Inventories implements Module {
+public class Inventories implements Service {
     private final PluginStorage<String, MeteorInventory> menuStorage = PluginStorage.initAsConcurrentHash();
     private final BukkitMeteorPlugin plugin;
     private boolean generateFolder = true;
@@ -85,11 +85,6 @@ public class Inventories implements Module {
                 )
             );
         }
-    }
-
-    @Override
-    public boolean isPersistent() {
-        return true;
     }
 
     @Override

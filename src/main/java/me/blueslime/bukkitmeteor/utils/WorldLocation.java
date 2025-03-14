@@ -1,5 +1,8 @@
 package me.blueslime.bukkitmeteor.utils;
 
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageIdentifier;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
+import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -12,30 +15,28 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-@SuppressWarnings("unused")
-public class WorldLocation {
-    protected final String world;
-    protected double x;
-    protected double y;
-    protected double z;
-    protected float yaw;
-    protected float pitch;
+public class WorldLocation implements StorageObject {
 
-    /**
-     * World Location instance
-     * @param world name
-     * @param x location
-     * @param y location
-     * @param z location
-     */
-    public WorldLocation(String world, double x, double y, double z) {
-        this.world = world;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.yaw = 0;
-        this.pitch = 0;
-    }
+    @StorageKey(key = "world")
+    private String world;
+
+    @StorageKey(key = "x")
+    private double x;
+
+    @StorageKey(key = "y")
+    private double y;
+
+    @StorageKey(key = "z")
+    private double z;
+
+    @StorageKey(key = "yaw")
+    private float yaw;
+
+    @StorageKey(key = "pitch")
+    private float pitch;
+
+    @StorageIdentifier
+    private String identifier;
 
     /**
      * World Location instance
@@ -46,13 +47,59 @@ public class WorldLocation {
      * @param yaw data
      * @param pitch data
      */
-    public WorldLocation(String world, double x, double y, double z, float yaw, float pitch) {
+    public WorldLocation(
+        @StorageIdentifier String identifier,
+        @StorageKey(key = "world") String world,
+        @StorageKey(key = "x") double x,
+        @StorageKey(key = "y") double y,
+        @StorageKey(key = "z") double z,
+        @StorageKey(key = "yaw") float yaw,
+        @StorageKey(key = "pitch") float pitch
+    ) {
+        this.identifier = identifier != null ? identifier : x + "-" + y + "-" + z;
         this.world = world;
+        this.pitch = pitch;
+        this.yaw = yaw;
         this.x = x;
         this.y = y;
         this.z = z;
-        this.yaw = yaw;
-        this.pitch = pitch;
+    }
+
+    public void setStorageIdentifier(String identifier) {
+        this.identifier = identifier;
+    }
+
+    /**
+     * World Location instance
+     * @param world name
+     * @param x location
+     * @param y location
+     * @param z location
+     */
+    public WorldLocation(String identifier, String world, double x, double y, double z) {
+        this(identifier, world, x, y, z, 0, 0);
+    }
+
+    /**
+     * World Location instance
+     * @param world name
+     * @param x location
+     * @param y location
+     * @param z location
+     */
+    public WorldLocation(String world, double x, double y, double z, float yaw, float pitch) {
+        this(null, world, x, y, z, yaw, pitch);
+    }
+
+    /**
+     * World Location instance
+     * @param world name
+     * @param x location
+     * @param y location
+     * @param z location
+     */
+    public WorldLocation(String world, double x, double y, double z) {
+        this(null, world, x, y, z, 0, 0);
     }
 
     /**
@@ -72,21 +119,21 @@ public class WorldLocation {
     public static WorldLocation at(Location location) {
         if (location.getWorld() != null) {
             return new WorldLocation(
-                    location.getWorld().getName(),
-                    location.getBlockX(),
-                    location.getBlockY(),
-                    location.getBlockZ(),
-                    location.getYaw(),
-                    location.getPitch()
-            );
-        }
-        return new WorldLocation(
-                null,
+                location.getWorld().getName(),
                 location.getBlockX(),
                 location.getBlockY(),
                 location.getBlockZ(),
                 location.getYaw(),
                 location.getPitch()
+            );
+        }
+        return new WorldLocation(
+            null,
+            location.getBlockX(),
+            location.getBlockY(),
+            location.getBlockZ(),
+            location.getYaw(),
+            location.getPitch()
         );
     }
 
@@ -116,6 +163,10 @@ public class WorldLocation {
 
     public int getBlockZ() {
         return floor(z);
+    }
+
+    public void setWorld(String world) {
+        this.world = world;
     }
 
     /**
@@ -280,14 +331,20 @@ public class WorldLocation {
         }
         path = path != null && !path.isEmpty() ? path.endsWith(".") ? path : path + "." : "";
 
+
+
         return new WorldLocation(
-                section.getString(path +"world", null),
-                section.getDouble(path + "x", 0),
-                section.getDouble(path + "y", 0),
-                section.getDouble(path + "z", 0),
-                Float.parseFloat(section.getString(path + "yaw", "0")),
-                Float.parseFloat(section.getString(path + "pitch", "0"))
+            section.getString(path +"world", null),
+            section.getDouble(path + "x", -999991),
+            section.getDouble(path + "y", -999991),
+            section.getDouble(path + "z", -999991),
+            Float.parseFloat(section.getString(path + "yaw", "0")),
+            Float.parseFloat(section.getString(path + "pitch", "0"))
         );
+    }
+
+    public boolean exists() {
+        return x != -999991 && y != -999991 && z != -999991 && world != null;
     }
 
     public static List<WorldLocation> getLocations(ConfigurationSection section) {
@@ -309,6 +366,10 @@ public class WorldLocation {
     }
 
     public Location toLocation() {
+        if (!exists()) {
+            return null;
+        }
+
         World world = this.world != null ? Bukkit
                 .getServer()
                 .getWorld(this.world) : null;
