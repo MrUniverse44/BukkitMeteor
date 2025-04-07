@@ -1,5 +1,6 @@
 package me.blueslime.bukkitmeteor.implementation;
 
+import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.builder.impls.EmptyImplement;
 import me.blueslime.bukkitmeteor.implementation.abstracts.AbstractImplementer;
 import me.blueslime.bukkitmeteor.implementation.data.Implement;
@@ -9,7 +10,6 @@ import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegisteredModuleInstance;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
-import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 
 import java.lang.reflect.*;
@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class Implements extends AbstractImplementer {
@@ -170,8 +171,8 @@ public class Implements extends AbstractImplementer {
         }
     }
 
-    public MeteorLogger getLogs() {
-        return Implements.fetch(MeteorLogger.class);
+    public Logger getLogs() {
+        return Implements.fetch(BukkitMeteorPlugin.class).getLogger();
     }
 
     /**
@@ -223,17 +224,14 @@ public class Implements extends AbstractImplementer {
         Class<?> fieldClazz = field.getType();
 
         PluginConsumer.process(() -> {
-            try {
-                if (implement.identifier().isEmpty()) {
-                    field.set(instancedClass, Implements.fetch(fieldClazz));
-                } else {
-                    field.set(instancedClass, Implements.fetch(fieldClazz, implement.identifier()));
-                }
-                getLogs().info("Injected dependency into field " + field.getName() + ": " + field.get(instancedClass));
-            } catch (Exception e) {
-                getLogs().info("Error injecting dependency into field " + field.getName() + ": " + e.getMessage());
+            if (implement.identifier().isEmpty()) {
+                field.set(instancedClass, Implements.fetch(fieldClazz));
+            } else {
+                field.set(instancedClass, Implements.fetch(fieldClazz, implement.identifier()));
             }
-        });
+            getLogs().info("Injected dependency into field " + field.getName() + ": " + field.get(instancedClass));
+        }, e -> getLogs().info("Error injecting dependency into field " + field.getName() + ": " + e.getMessage())
+        );
     }
 
     /**
@@ -248,20 +246,16 @@ public class Implements extends AbstractImplementer {
         Register data = field.getAnnotation(Register.class);
 
         PluginConsumer.process(() -> {
-            try {
-                Object value = field.get(instancedClass);
-                if (value != null) {
-                    if (data.identifier().isEmpty()) {
-                        CLASS_MAP.put(RegistrationData.fromData(module, field.getType()), value);
-                    } else {
-                        CLASS_MAP.put(RegistrationData.fromData(module, field.getType(), data.identifier()), value);
-                    }
-                    getLogs().info("Registered field " + field.getName() + " with value: " + value);
+            Object value = field.get(instancedClass);
+            if (value != null) {
+                if (data.identifier().isEmpty()) {
+                    CLASS_MAP.put(RegistrationData.fromData(module, field.getType()), value);
+                } else {
+                    CLASS_MAP.put(RegistrationData.fromData(module, field.getType(), data.identifier()), value);
                 }
-            } catch (Exception e) {
-                getLogs().info("Error processing register field " + field.getName() + ": " + e.getMessage());
             }
-        });
+            getLogs().info("Registered field " + field.getName() + " with value: " + value);
+        }, e -> getLogs().info("Error processing register field " + field.getName() + ": " + e.getMessage()));
     }
 
     /**
