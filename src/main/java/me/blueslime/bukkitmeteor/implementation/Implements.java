@@ -1,6 +1,5 @@
 package me.blueslime.bukkitmeteor.implementation;
 
-import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.builder.impls.EmptyImplement;
 import me.blueslime.bukkitmeteor.implementation.abstracts.AbstractImplementer;
 import me.blueslime.bukkitmeteor.implementation.data.Implement;
@@ -11,6 +10,7 @@ import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegisteredModuleInstance;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
+import org.bukkit.Bukkit;
 
 import java.lang.reflect.*;
 import java.util.List;
@@ -172,7 +172,7 @@ public class Implements extends AbstractImplementer {
     }
 
     public Logger getLogs() {
-        return Implements.fetch(BukkitMeteorPlugin.class).getLogger();
+        return Bukkit.getServer().getLogger();
     }
 
     /**
