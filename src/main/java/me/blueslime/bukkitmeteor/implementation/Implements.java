@@ -9,6 +9,7 @@ import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegisteredModuleInstance;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
+import me.blueslime.bukkitmeteor.logs.MeteorLogger;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 
 import java.lang.reflect.*;
@@ -47,16 +48,121 @@ public class Implements extends AbstractImplementer {
         dataList.forEach(CLASS_MAP::remove);
     }
 
+    /**
+     * Creates an instance of the given class by finding a suitable constructor and injecting dependencies.
+     *
+     * @param clazz The class to instantiate.
+     * @param <T>   The type of the class.
+     * @return A new instance of the class.
+     * @throws RuntimeException If no suitable constructor is found or if not all parameters are annotated.
+     */
+    public <T> T create(Class<T> clazz) {
+        getLogs().info("Attempting to create an instance of class: " + clazz.getSimpleName());
+        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+
+        for (Constructor<?> constructor : constructors) {
+            getLogs().info("Evaluating constructor: " + constructor);
+            T value = processConstructor(clazz, constructor);
+            if (value != null) {
+                registerAll(value);
+                getLogs().info("Instance created and registered successfully: " + value);
+                return value;
+            }
+        }
+
+        String errorMessage = "No suitable constructor found or not all parameters are annotated. Class: " + clazz.getSimpleName();
+        getLogs().info(errorMessage);
+        throw new RuntimeException(errorMessage);
+    }
+
+    /**
+     * Processes the given constructor by injecting dependencies into its parameters.
+     *
+     * @param clazz       The class to instantiate.
+     * @param constructor The constructor to process.
+     * @param <T>         The type of the class.
+     * @return A new instance of the class if successful; otherwise, returns null.
+     */
+    private <T> T processConstructor(Class<T> clazz, Constructor<?> constructor) {
+        int paramCount = constructor.getParameterCount();
+        Object[] parameters = new Object[paramCount];
+        boolean allAnnotated = true;
+        Parameter[] params = constructor.getParameters();
+
+        // If there are no parameters, create the instance directly.
+        if (paramCount == 0) {
+            try {
+                getLogs().info("No-argument constructor found. Creating instance directly.");
+                constructor.setAccessible(true);
+                T instance = clazz.cast(constructor.newInstance());
+                getLogs().info("Instance created successfully without parameters: " + instance);
+                return instance;
+            } catch (Exception e) {
+                getLogs().info("Error creating instance without parameters: " + e.getMessage());
+                return null;
+            }
+        }
+
+        // Process each parameter of the constructor.
+        for (int i = 0; i < paramCount; i++) {
+            Parameter parameter = params[i];
+            if (parameter.isAnnotationPresent(Implement.class)) {
+                Implement annotation = parameter.getAnnotation(Implement.class);
+                getLogs().info("Parameter " + i + " annotated with @Implement. Identifier: " + annotation.identifier());
+                try {
+                    if (annotation.identifier().isEmpty()) {
+                        parameters[i] = Implements.fetch(parameter.getType());
+                    } else {
+                        parameters[i] = Implements.fetch(parameter.getType(), annotation.identifier());
+                    }
+                    getLogs().info("Injected dependency for parameter " + i + ": " + parameters[i]);
+                } catch (Exception e) {
+                    getLogs().info("Error injecting dependency for parameter " + i + " (" + parameter.getType().getSimpleName() + "): " + e.getMessage());
+                    return null;
+                }
+            } else {
+                getLogs().info("Parameter " + i + " is not annotated with @Implement.");
+                allAnnotated = false;
+            }
+        }
+
+        if (!allAnnotated) {
+            getLogs().info("Not all constructor parameters are annotated with @Implement. Skipping this constructor.");
+            return null;
+        }
+
+        try {
+            constructor.setAccessible(true);
+            T instance = clazz.cast(constructor.newInstance(parameters));
+            getLogs().info("Instance created successfully using constructor: " + constructor);
+            return instance;
+        } catch (Exception e) {
+            getLogs().info("Error instantiating " + clazz.getSimpleName() + " using constructor " + constructor + ": " + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Registers all provided objects by invoking the registerClass method for each.
+     *
+     * @param classes The objects to register.
+     */
     public void registerAll(Object... classes) {
         for (Object clazz : classes) {
             registerClass(clazz);
         }
     }
 
+    /**
+     * Registers an instance by processing its fields and methods, including those in its superclass hierarchy.
+     *
+     * @param instancedClass The instance to register.
+     */
     public void registerClass(Object instancedClass) {
         Class<?> clazz = instancedClass.getClass();
+        getLogs().info("Registering class: " + clazz.getSimpleName());
 
-        /* Feat: support for super class */
+        // Support for superclasses.
         while (clazz != null) {
             handleFields(clazz, instancedClass);
             handleMethods(clazz, instancedClass);
@@ -64,21 +170,16 @@ public class Implements extends AbstractImplementer {
         }
     }
 
-    public <T> T create(Class<T> clazz) {
-        Constructor<?>[] constructors = clazz.getDeclaredConstructors();
-
-        for (Constructor<?> constructor : constructors) {
-            T value = processConstructor(clazz, constructor);
-            if (value != null) {
-                registerAll(value);
-                return value;
-            }
-        }
-
-        throw new RuntimeException("No suitable constructor found or not all parameters are annotated. Class: " + clazz.getSimpleName());
+    public MeteorLogger getLogs() {
+        return Implements.fetch(MeteorLogger.class);
     }
 
-    // Private Methods for Processing
+    /**
+     * Processes all declared fields of the given class and registers or injects dependencies as needed.
+     *
+     * @param clazz          The class whose fields will be processed.
+     * @param instancedClass The instance containing the fields.
+     */
     private void handleFields(Class<?> clazz, Object instancedClass) {
         Field[] fields = clazz.getDeclaredFields();
         Module module = instancedClass instanceof Module ? (Module) instancedClass : null;
@@ -93,6 +194,12 @@ public class Implements extends AbstractImplementer {
         }
     }
 
+    /**
+     * Processes all declared methods of the given class and registers them if annotated.
+     *
+     * @param clazz          The class whose methods will be processed.
+     * @param instancedClass The instance containing the methods.
+     */
     private void handleMethods(Class<?> clazz, Object instancedClass) {
         Method[] methods = clazz.getDeclaredMethods();
         Module module = instancedClass instanceof Module ? (Module) instancedClass : null;
@@ -104,38 +211,69 @@ public class Implements extends AbstractImplementer {
         }
     }
 
+    /**
+     * Injects a dependency into the annotated field.
+     *
+     * @param field          The field to process.
+     * @param instancedClass The instance containing the field.
+     */
     private void processImplementField(Field field, Object instancedClass) {
         field.setAccessible(true);
         Implement implement = field.getAnnotation(Implement.class);
         Class<?> fieldClazz = field.getType();
 
         PluginConsumer.process(() -> {
-            if (implement.identifier().isEmpty()) {
-                field.set(instancedClass, Implements.fetch(fieldClazz));
-            } else {
-                field.set(instancedClass, Implements.fetch(fieldClazz, implement.identifier()));
+            try {
+                if (implement.identifier().isEmpty()) {
+                    field.set(instancedClass, Implements.fetch(fieldClazz));
+                } else {
+                    field.set(instancedClass, Implements.fetch(fieldClazz, implement.identifier()));
+                }
+                getLogs().info("Injected dependency into field " + field.getName() + ": " + field.get(instancedClass));
+            } catch (Exception e) {
+                getLogs().info("Error injecting dependency into field " + field.getName() + ": " + e.getMessage());
             }
         });
     }
 
+    /**
+     * Processes a field annotated with @Register and registers its value.
+     *
+     * @param field          The field to process.
+     * @param instancedClass The instance containing the field.
+     * @param module         The module instance, if available.
+     */
     private void processRegisterField(Field field, Object instancedClass, Module module) {
         field.setAccessible(true);
         Register data = field.getAnnotation(Register.class);
 
         PluginConsumer.process(() -> {
-            Object value = field.get(instancedClass);
-            if (value != null) {
-                if (data.identifier().isEmpty()) {
-                    CLASS_MAP.put(RegistrationData.fromData(module, field.getType()), value);
-                } else {
-                    CLASS_MAP.put(RegistrationData.fromData(module, field.getType(), data.identifier()), value);
+            try {
+                Object value = field.get(instancedClass);
+                if (value != null) {
+                    if (data.identifier().isEmpty()) {
+                        CLASS_MAP.put(RegistrationData.fromData(module, field.getType()), value);
+                    } else {
+                        CLASS_MAP.put(RegistrationData.fromData(module, field.getType(), data.identifier()), value);
+                    }
+                    getLogs().info("Registered field " + field.getName() + " with value: " + value);
                 }
+            } catch (Exception e) {
+                getLogs().info("Error processing register field " + field.getName() + ": " + e.getMessage());
             }
         });
     }
 
+    /**
+     * Processes a method annotated with @Register and registers its return value.
+     *
+     * @param method         The method to process.
+     * @param instancedClass The instance containing the method.
+     * @param module         The module instance, if available.
+     */
     private void processRegisterMethod(Method method, Object instancedClass, Module module) {
         if (method.getReturnType().equals(Void.TYPE)) {
+            getLogs().info("Skipping method " + method.getName() + " because it returns void.");
             return;
         }
 
@@ -143,48 +281,27 @@ public class Implements extends AbstractImplementer {
         Register data = method.getAnnotation(Register.class);
 
         PluginConsumer.process(() -> {
-            Object value = method.invoke(instancedClass);
-            if (value != null) {
-                if (data.identifier().isEmpty()) {
-                    CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType()), value);
+            try {
+                Object value = method.invoke(instancedClass);
+                if (value != null) {
+                    if (data.identifier().isEmpty()) {
+                        CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType()), value);
+                    } else {
+                        CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType(), data.identifier()), value);
+                    }
+                    getLogs().info("Registered method " + method.getName() + " with value: " + value);
                 } else {
-                    CLASS_MAP.put(RegistrationData.fromData(module, method.getReturnType(), data.identifier()), value);
+                    String msg = "Cannot register a null result from method: " + method.getName() + " of type " + method.getReturnType().getSimpleName();
+                    getLogs().info(msg);
+                    throw new IllegalMethodRegistration(msg);
                 }
-            } else {
-                throw new IllegalMethodRegistration("Can't register a null value result from: " + method.getName() + " of " + method.getReturnType().getSimpleName());
+            } catch (Exception ex) {
+                getLogs().info("Error processing register method " + method.getName() + ": " + ex.getMessage());
+                throw new RuntimeException(new IllegalMethodRegistration(ex));
             }
-        }, ex -> {
-            throw new RuntimeException(new IllegalMethodRegistration(ex));
         });
     }
 
-    private <T> T processConstructor(Class<T> clazz, Constructor<?> constructor) {
-        Object[] parameters = new Object[constructor.getParameterCount()];
-        boolean allAnnotated = true;
-
-        Parameter[] params = constructor.getParameters();
-        for (int i = 0; i < params.length; i++) {
-            Parameter parameter = params[i];
-            if (parameter.isAnnotationPresent(Implement.class)) {
-                Implement annotation = parameter.getAnnotation(Implement.class);
-                if (annotation.identifier().isEmpty()) {
-                    parameters[i] = Implements.fetch(parameter.getType());
-                } else {
-                    parameters[i] = Implements.fetch(parameter.getType(), annotation.identifier());
-                }
-            } else {
-                allAnnotated = false;
-            }
-        }
-
-        if (allAnnotated) {
-            try {
-                return clazz.cast(constructor.newInstance(parameters));
-            } catch (Exception ignored) {
-            }
-        }
-        return null;
-    }
 
     @SuppressWarnings("unchecked")
     public <T> T fetchClass(RegistrationData data) {
