@@ -33,14 +33,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
 import java.io.InputStream;
 import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("unused")
 public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLogger, Implementer {
     private final Map<LoggerType, String> logMap = new EnumMap<>(LoggerType.class);
-    private final Map<Class<?>, Module> moduleMap = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Module> moduleMap = new LinkedHashMap<>();
     private EmptyImplement implement = EmptyImplement.NULL;
 
     /**
@@ -202,7 +202,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
     }
 
     private void loadModules() {
-        for (Module module : new HashSet<>(moduleMap.values())) {
+        for (Module module : new LinkedList<>(moduleMap.values())) {
             if (module instanceof Menus || module instanceof Inventories) {
                 continue;
             }
@@ -360,7 +360,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
      * This method reloads all other modules
      */
     public void reload() {
-        for (Module module : new HashSet<>(moduleMap.values())) {
+        for (Module module : new LinkedList<>(moduleMap.values())) {
             module.reload();
         }
     }
@@ -369,7 +369,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
      * This method shutdown all other modules
      */
     public void shutdown() {
-        for (Module module : new HashSet<>(moduleMap.values())) {
+        for (Module module : new LinkedList<>(moduleMap.values())) {
             module.shutdown();
         }
     }
