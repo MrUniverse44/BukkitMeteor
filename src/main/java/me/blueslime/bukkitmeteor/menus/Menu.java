@@ -17,7 +17,11 @@ public abstract class Menu {
     private final BukkitMeteorPlugin plugin;
     private final File file;
 
-    public Menu(BukkitMeteorPlugin plugin, FileConfiguration configuration, File file) {
+    public Menu(
+        BukkitMeteorPlugin plugin,
+        FileConfiguration configuration,
+        File file
+    ) {
         this.configuration = configuration;
         this.plugin = plugin;
         this.file = file;

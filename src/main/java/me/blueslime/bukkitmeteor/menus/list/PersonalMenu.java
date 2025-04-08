@@ -1,20 +1,22 @@
 package me.blueslime.bukkitmeteor.menus.list;
 
-import fr.mrmicky.fastinv.FastInv;
-import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
-import me.blueslime.bukkitmeteor.actions.Actions;
-import me.blueslime.bukkitmeteor.conditions.Conditions;
-import me.blueslime.bukkitmeteor.implementation.Implements;
-import me.blueslime.bukkitmeteor.menus.ItemMenu;
-import me.blueslime.bukkitmeteor.utils.PluginUtil;
-import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
-import me.blueslime.utilitiesapi.item.ItemWrapper;
 import me.blueslime.utilitiesapi.item.dynamic.executor.DynamicExecutor;
-import me.blueslime.utilitiesapi.text.TextReplacer;
-import me.blueslime.utilitiesapi.text.TextUtilities;
+import me.blueslime.bukkitmeteor.utils.list.ReturnableArrayList;
+import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.utilitiesapi.tools.PlaceholderParser;
+import me.blueslime.bukkitmeteor.conditions.Conditions;
+import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
+import me.blueslime.utilitiesapi.text.TextUtilities;
+import me.blueslime.utilitiesapi.text.TextReplacer;
+import me.blueslime.bukkitmeteor.utils.PluginUtil;
+import me.blueslime.utilitiesapi.item.ItemWrapper;
+import me.blueslime.bukkitmeteor.actions.Actions;
+import me.blueslime.bukkitmeteor.menus.ItemMenu;
+
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+
+import fr.mrmicky.fastinv.FastInv;
 
 import java.util.List;
 
@@ -23,9 +25,26 @@ public class PersonalMenu extends FastInv {
     private final BukkitMeteorPlugin plugin;
     private boolean canOpenMenu = true;
 
+    public PersonalMenu(Player player, ConfigurationSection configuration) {
+        this(
+            Implements.fetch(BukkitMeteorPlugin.class),
+            player,
+            configuration
+        );
+    }
+
     @SuppressWarnings("unused")
-    public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration) {
-        this(plugin, player, configuration, TextReplacer.builder());
+    public PersonalMenu(
+        BukkitMeteorPlugin plugin,
+        Player player,
+        ConfigurationSection configuration
+    ) {
+        this(
+            plugin,
+            player,
+            configuration,
+            TextReplacer.builder()
+        );
     }
 
     private ItemMenu checkConditions(Conditions conditions, ConfigurationSection configuration, Player player, ItemWrapper original, String path) {
@@ -39,13 +58,24 @@ public class PersonalMenu extends FastInv {
                 if (!configuration.contains(path + ".without-conditions")) {
                     return new ItemMenu(null, path);
                 }
-                return checkConditions(conditions, configuration, player, ItemWrapper.fromData(configuration, path + ".without-conditions"), path + ".without-conditions");
+                return checkConditions(
+                    conditions,
+                    configuration,
+                    player,
+                    ItemWrapper.fromData(configuration, path + ".without-conditions"),
+                    path + ".without-conditions"
+                );
             }
         }
         return new ItemMenu(null, path);
     }
 
-    public PersonalMenu(BukkitMeteorPlugin plugin, Player player, ConfigurationSection configuration, TextReplacer replacer) {
+    public PersonalMenu(
+        BukkitMeteorPlugin plugin,
+        Player player,
+        ConfigurationSection configuration,
+        TextReplacer replacer
+    ) {
         super(
             PluginUtil.getRows(configuration.getInt("menu-settings.rows", 54)),
             TextUtilities.colorize(
@@ -112,43 +142,43 @@ public class PersonalMenu extends FastInv {
             if (configuration.contains(path + ".slot")) {
                 TextReplacer finalReplacer = replacer;
                 setItem(
-                        configuration.getInt(path + ".slot", 0),
-                        wrapper.getDynamicItem(player).getItem(),
-                        event -> {
-                            event.setCancelled(true);
-                            if (configuration.contains(finalPath + ".actions-condition")) {
-                                List<String> actionConditionList = configuration.getStringList(finalPath + ".actions-condition");
+                    configuration.getInt(path + ".slot", 0),
+                    wrapper.getDynamicItem(player).getItem(),
+                    event -> {
+                        event.setCancelled(true);
+                        if (configuration.contains(finalPath + ".actions-condition")) {
+                            List<String> actionConditionList = configuration.getStringList(finalPath + ".actions-condition");
 
-                                if (conditions != null) {
-                                    if (!conditions.execute(actionConditionList, player)) {
-                                        List<String> list = configuration.getStringList(finalPath + ".failed-actions-conditions");
+                            if (conditions != null) {
+                                if (!conditions.execute(actionConditionList, player)) {
+                                    List<String> list = configuration.getStringList(finalPath + ".failed-actions-conditions");
 
-                                        if (list.isEmpty()) {
-                                            return;
-                                        }
-
-                                        actions.execute(
-                                            list,
-                                            player,
-                                            finalReplacer
-                                        );
+                                    if (list.isEmpty()) {
                                         return;
                                     }
+
+                                    actions.execute(
+                                        list,
+                                        player,
+                                        finalReplacer
+                                    );
+                                    return;
                                 }
                             }
-
-                            List<String> list = configuration.getStringList(finalPath + ".actions");
-
-                            if (list.isEmpty()) {
-                                return;
-                            }
-
-                            actions.execute(
-                                list,
-                                player,
-                                finalReplacer
-                            );
                         }
+
+                        List<String> list = configuration.getStringList(finalPath + ".actions");
+
+                        if (list.isEmpty()) {
+                            return;
+                        }
+
+                        actions.execute(
+                            list,
+                            player,
+                            finalReplacer
+                        );
+                    }
                 );
             }
 
@@ -207,30 +237,30 @@ public class PersonalMenu extends FastInv {
 
             if (plugin.isPluginEnabled("PlaceholderAPI")) {
                 wrapper.setName(
-                        original.getName() != null ?
-                                PlaceholderParser.parse(player, replacer.apply(original.getName())) :
-                                original.getName()
+                    original.getName() != null ?
+                        PlaceholderParser.parse(player, replacer.apply(original.getName())) :
+                        original.getName()
                 );
 
                 wrapper.setLore(
-                        new ReturnableArrayList<>(original.getLore()).replace(
-                                line -> PlaceholderParser.parse(
-                                        player,
-                                        replacer.apply(line)
-                                )
+                    new ReturnableArrayList<>(original.getLore()).replace(
+                        line -> PlaceholderParser.parse(
+                            player,
+                            replacer.apply(line)
                         )
+                    )
                 );
             } else {
                 wrapper.setName(
-                        original.getName() != null ?
-                                replacer.apply(original.getName()) :
-                                original.getName()
+                    original.getName() != null ?
+                        replacer.apply(original.getName()) :
+                        original.getName()
                 );
 
                 wrapper.setLore(
-                        new ReturnableArrayList<>(original.getLore()).replace(
-                                replacer::apply
-                        )
+                    new ReturnableArrayList<>(original.getLore()).replace(
+                        replacer::apply
+                    )
                 );
             }
             return wrapper;

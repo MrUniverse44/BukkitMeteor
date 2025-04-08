@@ -65,7 +65,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
      */
     protected void initialize(Object instance, boolean generateInventoryFolder, boolean generateMenuFolder) {
         PersistentDataNBT.initialize(this);
-        new MeteorGetter(this);
+
+        registerModule(
+            new MeteorGetter(this)
+        );
 
         new Actions(this);
         new Conditions(this);
@@ -91,7 +94,10 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
      */
     protected void initialize(Object instance, PluginBuilder builder) {
         PersistentDataNBT.initialize(this);
-        new MeteorGetter(this);
+
+        registerModule(
+            new MeteorGetter(this)
+        );
 
         new Actions(this);
         new Conditions(this);

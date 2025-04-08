@@ -9,15 +9,15 @@ import me.blueslime.bukkitmeteor.implementation.module.Module;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
 import me.blueslime.bukkitmeteor.implementation.registered.RegisteredModuleInstance;
 import me.blueslime.bukkitmeteor.implementation.registered.RegistrationData;
+import me.blueslime.bukkitmeteor.logs.MeteorLogger;
+import me.blueslime.bukkitmeteor.utils.ForcedLogs;
 import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
-import org.bukkit.Bukkit;
 
 import java.lang.reflect.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Logger;
 
 @SuppressWarnings("unused")
 public class Implements extends AbstractImplementer {
@@ -171,8 +171,8 @@ public class Implements extends AbstractImplementer {
         }
     }
 
-    public Logger getLogs() {
-        return Bukkit.getServer().getLogger();
+    public MeteorLogger getLogs() {
+        return Implements.fetch(MeteorLogger.class);
     }
 
     /**
@@ -301,6 +301,9 @@ public class Implements extends AbstractImplementer {
     public <T> T fetchClass(RegistrationData data) {
         Object result = CLASS_MAP.get(data);
         if (result == null) {
+            if (data.getInstance() == MeteorLogger.class) {
+                return (T) new ForcedLogs();
+            }
             if (data.getInstance() == EmptyImplement.class) {
                 CLASS_MAP.put(RegistrationData.fromData(EmptyImplement.class), EmptyImplement.INVOKE);
                 return (T) EmptyImplement.INVOKE;
@@ -314,6 +317,9 @@ public class Implements extends AbstractImplementer {
     public <T> T fetchClass(RegistrationData data, EmptyImplement implement) {
         Object result = CLASS_MAP.get(data);
         if (result == null) {
+            if (data.getInstance() == MeteorLogger.class) {
+                return (T) new ForcedLogs();
+            }
             if (data.getInstance() == EmptyImplement.class) {
                 CLASS_MAP.put(RegistrationData.fromData(EmptyImplement.class), EmptyImplement.INVOKE);
             }
