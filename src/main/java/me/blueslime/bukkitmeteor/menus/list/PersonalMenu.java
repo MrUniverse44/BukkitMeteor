@@ -113,6 +113,10 @@ public class PersonalMenu extends FastInv {
 
         Actions actions = Implements.fetch(Actions.class);
 
+        addClickHandler(
+            event -> event.setCancelled(true)
+        );
+
         for (String key : extra.getKeys(false)) {
             String path = "items." + key;
 
@@ -170,6 +174,7 @@ public class PersonalMenu extends FastInv {
                         List<String> list = configuration.getStringList(finalPath + ".actions");
 
                         if (list.isEmpty()) {
+                            event.setCancelled(true);
                             return;
                         }
 
@@ -178,6 +183,7 @@ public class PersonalMenu extends FastInv {
                             player,
                             finalReplacer
                         );
+                        event.setCancelled(true);
                     }
                 );
             }
@@ -203,6 +209,7 @@ public class PersonalMenu extends FastInv {
                             List<String> list = configuration.getStringList(finalPath + ".actions");
 
                             if (list.isEmpty()) {
+                                event.setCancelled(true);
                                 return;
                             }
 
@@ -211,6 +218,7 @@ public class PersonalMenu extends FastInv {
                                 player,
                                 finalReplacer1
                             );
+                            event.setCancelled(true);
                         }
                     );
                 }
