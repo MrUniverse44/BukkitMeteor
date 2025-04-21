@@ -3,6 +3,7 @@ package me.blueslime.bukkitmeteor.commands;
 import me.blueslime.bukkitmeteor.commands.advanced.CommandSender;
 import me.blueslime.bukkitmeteor.commands.advanced.NotNullArgument;
 import me.blueslime.bukkitmeteor.commands.advanced.NullableArgument;
+import me.blueslime.bukkitmeteor.commands.creator.CommandCreator;
 import me.blueslime.bukkitmeteor.commands.function.CommandFunction;
 import me.blueslime.bukkitmeteor.commands.issues.CommandArgumentNotFoundException;
 import me.blueslime.bukkitmeteor.commands.issues.CommandWrongSenderException;
@@ -61,6 +62,14 @@ public class CommandBuilder implements AdvancedModule {
             command.register();
         }
         return this;
+    }
+
+    /**
+     * Command creator
+     * @param commandName for the command, this is the main command
+     */
+    public CommandCreator create(String commandName) {
+        return CommandCreator.create(commandName);
     }
 
     /**

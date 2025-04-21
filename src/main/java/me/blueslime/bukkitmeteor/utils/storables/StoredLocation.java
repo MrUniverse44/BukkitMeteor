@@ -1,7 +1,6 @@
 package me.blueslime.bukkitmeteor.utils.storables;
 
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageConstructor;
-import me.blueslime.bukkitmeteor.storage.interfaces.StorageIgnore;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageKey;
 import me.blueslime.bukkitmeteor.storage.interfaces.StorageObject;
 import me.blueslime.bukkitmeteor.utils.WorldLocation;
@@ -18,7 +17,7 @@ public class StoredLocation implements StorageObject {
     @StorageKey(key = "pitch", defaultValue = "0.0F")
     private float pitch;
 
-    @StorageIgnore
+    @StorageKey(key = "world", defaultValue = "world")
     private String world;
 
     @StorageKey(key = "yaw", defaultValue = "0.0F")
@@ -38,6 +37,7 @@ public class StoredLocation implements StorageObject {
 
     @StorageConstructor
     public StoredLocation(
+        @StorageKey(key = "world", defaultValue = "world") String world,
         @StorageKey(key = "pitch", defaultValue = "0.0F") float pitch,
         @StorageKey(key = "yaw", defaultValue = "0.0F") float yaw,
         @StorageKey(key = "x", defaultValue = "0") double x,
@@ -45,9 +45,9 @@ public class StoredLocation implements StorageObject {
         @StorageKey(key = "z", defaultValue = "0") double z,
         @StorageKey(key = "id") String id
     ) {
-        this.world = "world";
-        this.pitch = 0.0F;
-        this.yaw = 0.0F;
+        this.world = world;
+        this.pitch = pitch;
+        this.yaw = yaw;
         this.id = id;
         this.x = x;
         this.y = y;
@@ -60,6 +60,7 @@ public class StoredLocation implements StorageObject {
 
     public static StoredLocation at(String id, Location location) {
         return new StoredLocation(
+            location.getWorld() != null ? location.getWorld().getName() : "world",
             location.getPitch(),
             location.getYaw(),
             location.getBlockX(),
@@ -71,6 +72,7 @@ public class StoredLocation implements StorageObject {
 
     public StoredLocation copy() {
         return new StoredLocation(
+            world,
             pitch,
             yaw,
             x,
@@ -184,7 +186,7 @@ public class StoredLocation implements StorageObject {
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
     public StoredLocation clone() {
-        return new StoredLocation(this.pitch, this.yaw, this.x, this.y, this.z, this.id).world(this.world);
+        return new StoredLocation(this.world, this.pitch, this.yaw, this.x, this.y, this.z, this.id).world(this.world);
     }
 
     public boolean equals(Object o) {
