@@ -67,7 +67,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         PersistentDataNBT.initialize(this);
 
         registerModule(
-            new MeteorGetter(this)
+            new MeteorGetter(this, PluginBuilder.builder())
         );
 
         new Actions(this);
@@ -96,7 +96,7 @@ public abstract class BukkitMeteorPlugin extends JavaPlugin implements MeteorLog
         PersistentDataNBT.initialize(this);
 
         registerModule(
-            new MeteorGetter(this)
+            new MeteorGetter(this, builder)
         );
 
         new Actions(this);
