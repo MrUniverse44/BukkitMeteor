@@ -248,6 +248,27 @@ public class Sender {
 
     /**
      * Send messages from a configuration path to the sender
+     * @param target for placeholders
+     * @param path of the message
+     * @param def value if the path is not set
+     * @param replacer replacements for messages
+     */
+    public void send(Player target, String path, Object def, TextReplacer replacer) {
+        send(target, null, path, def, replacer);
+    }
+
+    /**
+     * Send messages from a configuration path to the sender
+     * @param target for placeholders
+     * @param path of the message
+     * @param replacer replacements for messages
+     */
+    public void send(Player target, String path, TextReplacer replacer) {
+        send(target, null, path, path, replacer);
+    }
+
+    /**
+     * Send messages from a configuration path to the sender
      * @param configuration for search the current path
      * @param path of the message
      * @param def value if the path is not set

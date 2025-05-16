@@ -1,11 +1,13 @@
 package me.blueslime.bukkitmeteor.commands.creator.arguments;
 
-import me.blueslime.bukkitmeteor.commands.creator.interfaces.ArgumentHandler;
-import me.blueslime.bukkitmeteor.commands.creator.interfaces.TabCompletable;
+import me.blueslime.bukkitmeteor.commands.creator.interfaces.*;
 import me.blueslime.bukkitmeteor.commands.sender.Sender;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Represents a literal sub‑command node.
@@ -21,6 +23,84 @@ public abstract class SubCommandArgumentHandler implements ArgumentHandler, TabC
         this.label = label;
         registerAliases();
         registerSubArguments();
+        registerAll();
+    }
+
+    private void registerAll() {
+        Set<ArgumentEntry<?>> argumentMissingEntries = new HashSet<>();
+        Set<ArgumentEntry<?>> argumentCastEntries = new HashSet<>();
+
+        for (Method m : super.getClass().getDeclaredMethods()) {
+            if (m.isAnnotationPresent(MissingArgument.class)) {
+                MissingArgument argument = m.getAnnotation(MissingArgument.class);
+
+                Class<?> arg = argument.value();
+                int index = argument.index();
+
+                argumentMissingEntries.add(
+                    ArgumentEntry.of(arg).addMissingHandle(
+                        new ArgumentEntry.ArgumentMethod(this, m, index, arg)
+                    )
+                );
+            }
+            if (m.isAnnotationPresent(CastFailedArgument.class)) {
+                CastFailedArgument argument = m.getAnnotation(CastFailedArgument.class);
+
+                Class<?> arg = argument.value();
+                int index = argument.index();
+
+                argumentCastEntries.add(
+                    ArgumentEntry.of(arg).addCastFailed(
+                        new ArgumentEntry.ArgumentMethod(this, m, index, arg)
+                    )
+                );
+            }
+        }
+
+        for (Method m : super.getClass().getDeclaredMethods()) {
+            if (m.isAnnotationPresent(Argument.class)) {
+                Argument argument = m.getAnnotation(Argument.class);
+                String name = argument.name();
+                String[] aliases = argument.aliases();
+
+                List<ArgumentEntry<?>> argumentEntryList = new ArrayList<>();
+
+                for (Parameter p : m.getParameters()) {
+                    Set<ArgumentEntry<?>> argumentMissing = argumentMissingEntries
+                        .stream()
+                        .filter(entry -> entry.getArgumentClass() == p.getType())
+                        .collect(Collectors.toSet());
+
+                    Set<ArgumentEntry<?>> argumentCastFailed = argumentCastEntries
+                        .stream()
+                        .filter(entry -> entry.getArgumentClass() == p.getType())
+                        .collect(Collectors.toSet());
+
+                    ArgumentEntry<?> combined = ArgumentEntry.of(argumentMissing, argumentCastFailed, p.getType());
+
+                    argumentEntryList.add(combined);
+                }
+
+                sub(
+                    name,
+                    aliases,
+                    TypedExistentArgument.with(
+                        argumentEntryList
+                    ).run(
+                        new TypedExistentArgument.RunnableMethod(m, this)
+                    )
+                );
+            }
+
+            if (m.isAnnotationPresent(EmptyArgument.class)) {
+                withHandler(
+                    EmptyMethodCommandHandler.create()
+                        .add(new TypedExistentArgument.RunnableMethod(m, this))
+                );
+            }
+        }
+
+
     }
 
     public void addAlias(String alias) {
@@ -63,6 +143,17 @@ public abstract class SubCommandArgumentHandler implements ArgumentHandler, TabC
      */
     public SubCommandArgumentHandler sub(String name, ArgumentHandler handler) {
         this.children.add(SubCommandArgument.of(name).withHandler(handler));
+        return this;
+    }
+
+    /**
+     * Add a new sub argument node
+     * @param name for this argument
+     * @param handler for this node
+     * @return this instance
+     */
+    public SubCommandArgumentHandler sub(String name, String[] aliases, ArgumentHandler handler) {
+        this.children.add(SubCommandArgument.of(name).addAliases(aliases).withHandler(handler));
         return this;
     }
 

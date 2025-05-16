@@ -5,14 +5,14 @@ import me.blueslime.bukkitmeteor.commands.creator.interfaces.ExistentArgument;
 import me.blueslime.bukkitmeteor.commands.creator.interfaces.TabCompletable;
 import me.blueslime.bukkitmeteor.commands.sender.Sender;
 import me.blueslime.bukkitmeteor.implementation.Implements;
+import me.blueslime.utilitiesapi.utils.consumer.PluginConsumer;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.lang.reflect.Method;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -21,7 +21,25 @@ import java.util.stream.Collectors;
  */
 public class TypedExistentArgument implements ExistentArgument, TabCompletable {
     private final List<ArgumentEntry<?>> arguments = new ArrayList<>();
+    private final Set<RunnableMethod> methodHandlers = new HashSet<>();
     private RunnableExecution execution;
+
+    public static class RunnableMethod {
+        private Method method;
+        private Object clazz;
+
+        public RunnableMethod(Method method, Object clazz) {
+            this.method = method;
+            this.clazz = clazz;
+        }
+
+        protected void invoke(Object... parameters) {
+            PluginConsumer.process(
+                () -> method.invoke(clazz, parameters),
+                e -> {}
+            );
+        }
+    }
 
     @FunctionalInterface
     public interface RunnableExecution {
@@ -34,33 +52,55 @@ public class TypedExistentArgument implements ExistentArgument, TabCompletable {
         return arg;
     }
 
+    public static TypedExistentArgument with(Collection<ArgumentEntry<?>> entries) {
+        TypedExistentArgument arg = new TypedExistentArgument();
+        arg.arguments.addAll(entries);
+        return arg;
+    }
+
     public TypedExistentArgument run(RunnableExecution execution) {
         this.execution = execution;
+        return this;
+    }
+
+    public TypedExistentArgument run(Set<RunnableMethod> execution) {
+        this.methodHandlers.addAll(execution);
+        return this;
+    }
+
+    public TypedExistentArgument run(RunnableMethod execution) {
+        this.methodHandlers.add(execution);
         return this;
     }
 
     @Override
     public boolean handle(Sender sender, String[] args) {
         if (args.length < arguments.size()) {
-            arguments.get(args.length).handleMissing(sender);
+            arguments.get(args.length).handleMissing(sender, args.length);
             return true;
         }
 
-        Object[] parsedArgs = new Object[arguments.size()];
+        Object[] parsedArgs = new Object[arguments.size() + 1];
+        parsedArgs[0] = sender;
+
         for (int i = 0; i < arguments.size(); i++) {
             String input = args[i];
             ArgumentEntry<?> entry = arguments.get(i);
             Object value = entry.cast(input);
             if (value == null) {
-                entry.handleCastFailure(sender);
+                entry.handleCastFailure(sender, i);
                 return true;
             }
-            parsedArgs[i] = value;
+            parsedArgs[i + 1] = value;
         }
 
         if (execution != null) {
             execution.run(sender, parsedArgs);
         }
+
+        methodHandlers.forEach(
+            handle -> handle.invoke(sender, parsedArgs)
+        );
         return true;
     }
 

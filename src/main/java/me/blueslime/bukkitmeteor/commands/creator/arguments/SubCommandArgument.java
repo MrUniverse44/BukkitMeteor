@@ -26,16 +26,18 @@ public class SubCommandArgument implements ArgumentHandler, TabCompletable {
         aliases.add(alias.toLowerCase(Locale.ENGLISH));
     }
 
-    public void addAliases(String... aliases) {
+    public SubCommandArgument addAliases(String... aliases) {
         for (String alias : aliases) {
             addAlias(alias.toLowerCase(Locale.ENGLISH));
         }
+        return this;
     }
 
-    public void addAliases(Collection<String> aliases) {
+    public SubCommandArgument addAliases(Collection<String> aliases) {
         for (String alias : aliases) {
             addAlias(alias.toLowerCase(Locale.ENGLISH));
         }
+        return this;
     }
 
     public void removeAlias(String alias) {
