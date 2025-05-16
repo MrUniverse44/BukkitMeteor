@@ -166,15 +166,21 @@ public abstract class SubCommandArgumentHandler implements ArgumentHandler, TabC
         return this;
     }
 
-    public abstract void registerAliases();
+    public void registerAliases() {
 
-    public abstract void registerSubArguments();
+    }
+
+    public void registerSubArguments() {
+
+    }
 
     /**
      * Show a message when a subcommand doesn't exist
      * @return same instance
      */
-    public abstract Consumer<Sender> onUnknownSub();
+    public Consumer<Sender> onUnknownSub() {
+        return null;
+    }
 
     @Override
     public boolean handle(Sender sender, String[] args) {
