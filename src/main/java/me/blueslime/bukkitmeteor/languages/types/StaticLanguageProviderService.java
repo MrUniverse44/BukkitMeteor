@@ -25,7 +25,7 @@ public class StaticLanguageProviderService implements LanguageProvider {
             FileConfiguration.class,
             "messages.yml",
             fetch(BukkitMeteorPlugin.class).load(
-                new File(getDataFolder(), "messages.yml"),
+                new File(fetch(BukkitMeteorPlugin.class).getDataFolder(), "messages.yml"),
                 "/messages.yml"
             ),
             true

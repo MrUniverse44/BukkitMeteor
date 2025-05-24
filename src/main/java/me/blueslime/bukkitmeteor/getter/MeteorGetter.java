@@ -81,6 +81,13 @@ public class MeteorGetter implements Service {
             plugin.getDataFolder(),
             true
         );
+        // Register plugin's folder
+        registerImpl(
+            File.class,
+            "folder",
+            plugin.getDataFolder(),
+            true
+        );
         // Register Menus instance
         registerImpl(
             Menus.class,
