@@ -128,11 +128,21 @@ public class DynamicLanguageProviderService implements LanguageProvider {
     }
 
     @Override
+    public String getLocaleId(Player player) {
+        return getPlayerLocale(player);
+    }
+
+    @Override
     public FileConfiguration fromPlayerLocale(Player player) {
         if (player == null) {
             return fallbackLocaleConfiguration;
         }
         return fromLocaleCode(Locale.fromString(getPlayerLocale(player)));
+    }
+
+    @Override
+    public Locale fromPlayer(Player player) {
+        return Locale.fromString(getPlayerLocale(player));
     }
 
     @Override

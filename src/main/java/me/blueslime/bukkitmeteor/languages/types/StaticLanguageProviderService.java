@@ -42,4 +42,14 @@ public class StaticLanguageProviderService implements LanguageProvider {
         return fetch(FileConfiguration.class, "messages.yml");
     }
 
+    @Override
+    public String getLocaleId(Player player) {
+        return "";
+    }
+
+    @Override
+    public Locale fromPlayer(Player player) {
+        return null;
+    }
+
 }

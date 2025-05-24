@@ -11,4 +11,8 @@ public interface LanguageProvider extends Service {
 
     FileConfiguration fromLocaleCode(Locale locale);
 
+    String getLocaleId(Player player);
+
+    Locale fromPlayer(Player player);
+
 }
