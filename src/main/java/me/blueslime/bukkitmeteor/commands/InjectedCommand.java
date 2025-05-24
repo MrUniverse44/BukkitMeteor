@@ -62,10 +62,13 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
     }
 
     /**
-     * {@inheritDoc}
+     * You can execute a command here
+     * @param sender of the command
+     * @param label label
+     * @param args of the command executed.
      */
     @Override
-    public abstract void executeCommand(Sender sender, String command, String[] arguments);
+    public abstract void executeCommand(Sender sender, String label, String[] args);
 
     @Override
     public boolean overwriteCommand() {

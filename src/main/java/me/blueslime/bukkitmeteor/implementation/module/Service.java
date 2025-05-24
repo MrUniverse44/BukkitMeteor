@@ -1,8 +1,14 @@
 package me.blueslime.bukkitmeteor.implementation.module;
 
+import me.blueslime.bukkitmeteor.events.EventExecutor;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginManager;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Event;
 
 import java.io.File;
+import java.util.Optional;
+import java.util.UUID;
 
 public interface Service extends AdvancedModule {
 
@@ -12,6 +18,23 @@ public interface Service extends AdvancedModule {
      */
     default File getDataFolder() {
         return fetch(File.class, "folder");
+    }
+
+    default <T extends Event> EventExecutor<T> createEvent(Class<T> event) {
+        return createEvent(event, EventPriority.NORMAL);
+    }
+
+    default <T extends Event> EventExecutor<T> createEvent(Class<T> event, EventPriority priority) {
+        return new EventExecutor<T>(event, priority);
+    }
+
+    /**
+     * Gets the player instance using the player uniqueId
+     * @param name of the player
+     * @return player if presents or empty if not
+     */
+    default Optional<Player> getPlayer(String name) {
+        return Optional.ofNullable(getServer().getPlayerExact(name));
     }
 
     /**
