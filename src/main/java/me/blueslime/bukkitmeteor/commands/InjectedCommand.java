@@ -66,6 +66,10 @@ public abstract class InjectedCommand extends AdvancedCommand<BukkitMeteorPlugin
      * @param sender of the command
      * @param label label
      * @param args of the command executed.
+    <repository>
+    <id>comugamers-releases</id>
+    <url>https://repo.comugamers.com/repository/maven-group/</url>
+    </repository>
      */
     @Override
     public abstract void executeCommand(Sender sender, String label, String[] args);
