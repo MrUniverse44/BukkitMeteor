@@ -6,8 +6,10 @@ import me.blueslime.bukkitmeteor.actions.type.*;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.implementation.module.AdvancedModule;
 import me.blueslime.bukkitmeteor.implementation.registered.Register;
+import me.blueslime.bukkitmeteor.utils.skin.SkinUtil;
 import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -74,19 +76,54 @@ public class Actions implements AdvancedModule {
         return Collections.unmodifiableList(this.externalActions);
     }
 
-    public void execute(List<String> actions) {
-        execute(actions, null);
-    }
-
     public void execute(List<String> actions, Player player) {
         if (player == null || actions == null || actions.isEmpty()) {
             return;
         }
 
-        List<Action> combinedActions = getCombinedActions();
-        for (String param : actions) {
-            if (executeAction(combinedActions, player, param)) {
-                break;
+        TextReplacer replacer = TextReplacer.builder();
+
+        if (
+            actions.stream()
+                .anyMatch(line -> line.contains("<player-head-"))
+        ) {
+            SkinUtil.getPlayerHeadAsync(player).thenAcceptAsync(
+                head -> new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        replacer.addReplacements(
+                            SkinUtil.convertToLines(head)
+                        );
+                        List<Action> combinedActions = getCombinedActions();
+                        for (String param : actions) {
+                            if (executeAction(combinedActions, player, param, replacer)) {
+                                break;
+                            }
+                        }
+                    }
+                }.runTask(fetch(BukkitMeteorPlugin.class))
+            ).exceptionally(
+                ex -> {
+                    new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            List<Action> combinedActions = getCombinedActions();
+                            for (String param : actions) {
+                                if (executeAction(combinedActions, player, param, replacer)) {
+                                    break;
+                                }
+                            }
+                        }
+                    }.runTask(fetch(BukkitMeteorPlugin.class));
+                    return null;
+                }
+            );
+        } else {
+            List<Action> combinedActions = getCombinedActions();
+            for (String param : actions) {
+                if (executeAction(combinedActions, player, param, replacer)) {
+                    break;
+                }
             }
         }
     }
@@ -97,25 +134,60 @@ public class Actions implements AdvancedModule {
         }
 
         executor.submit(() -> {
-            List<Action> combinedActions = getCombinedActions();
-            for (String param : actions) {
-                String replacedParam = replacer.apply(param);
-                if (executeAction(combinedActions, player, replacedParam)) {
-                    break;
+            if (
+                actions.stream().anyMatch(line -> line.contains("<player-head-"))
+            ) {
+                SkinUtil.getPlayerHeadAsync(player).thenAcceptAsync(
+                    head -> new BukkitRunnable() {
+                        @Override
+                        public void run() {
+                            replacer.addReplacements(
+                                    SkinUtil.convertToLines(head)
+                            );
+                            List<Action> combinedActions = getCombinedActions();
+                            for (String param : actions) {
+                                if (executeAction(combinedActions, player, param, replacer)) {
+                                    break;
+                                }
+                            }
+                        }
+                    }.runTask(fetch(BukkitMeteorPlugin.class))
+                ).exceptionally(
+                        ex -> {
+                            new BukkitRunnable() {
+                                @Override
+                                public void run() {
+                                    List<Action> combinedActions = getCombinedActions();
+                                    for (String param : actions) {
+                                        if (executeAction(combinedActions, player, param, replacer)) {
+                                            break;
+                                        }
+                                    }
+                                }
+                            }.runTask(fetch(BukkitMeteorPlugin.class));
+                            return null;
+                        }
+                );
+            } else {
+                List<Action> combinedActions = getCombinedActions();
+                for (String param : actions) {
+                    if (executeAction(combinedActions, player, param, replacer)) {
+                        break;
+                    }
                 }
             }
         });
     }
 
-    private boolean executeAction(List<Action> actions, Player player, String param) {
+    private boolean executeAction(List<Action> actions, Player player, String param, TextReplacer replacer) {
         for (Action action : actions) {
-            if (action.isAction(param) && action.canExecute(plugin, player, param)) {
+            if (action.isAction(param) && action.canExecute(plugin, player, param, replacer)) {
                 if (action.requiresMainThread()) {
-                    plugin.getServer().getScheduler().runTask(plugin, () -> action.execute(plugin, param, player));
+                    plugin.getServer().getScheduler().runTask(plugin, () -> action.execute(plugin, param, replacer, player));
                 } else {
-                    action.execute(plugin, param, player);
+                    action.execute(plugin, param, replacer, player);
                 }
-                return action.isStoppingUpcomingActions(plugin, param, player);
+                return action.isStoppingUpcomingActions(plugin, param, player, replacer);
             }
         }
 

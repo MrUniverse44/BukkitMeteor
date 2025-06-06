@@ -3,6 +3,7 @@ package me.blueslime.bukkitmeteor.actions.type;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
 import me.blueslime.messagehandler.types.bossbar.BossBarHandler;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -20,7 +21,9 @@ public class RemoveBossBar extends Action {
      * @param players   players
      */
     @Override
-    public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players) {
+        parameter = replacer.apply(parameter);
+
         BossBarHandler handler = BossBarHandler.getInstance();
         for (Player player : players) {
             handler.remove(player);

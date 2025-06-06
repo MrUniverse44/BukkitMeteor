@@ -2,6 +2,7 @@ package me.blueslime.bukkitmeteor.actions.type;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 
@@ -13,7 +14,9 @@ public class ConsoleAction extends Action {
     }
 
     @Override
-    public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players) {
+        parameter = replacer.apply(parameter);
+
         if (players == null || players.isEmpty()) {
             plugin.getServer().dispatchCommand(
                     plugin.getServer().getConsoleSender(),

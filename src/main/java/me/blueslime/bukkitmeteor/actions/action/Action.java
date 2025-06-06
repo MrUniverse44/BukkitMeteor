@@ -2,6 +2,7 @@ package me.blueslime.bukkitmeteor.actions.action;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.implementation.module.Service;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -24,8 +25,8 @@ public abstract class Action implements Service {
      * @param players   players
      * @param parameter text
      */
-    public void execute(BukkitMeteorPlugin plugin, String parameter, Player... players) {
-        execute(plugin, parameter, Arrays.asList(players));
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, Player... players) {
+        execute(plugin, parameter, replacer, Arrays.asList(players));
     }
 
     /**
@@ -34,8 +35,9 @@ public abstract class Action implements Service {
      * @param plugin    of the event
      * @param players   players
      * @param parameter text
+     * @param replacer  of the event
      */
-    public abstract void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players);
+    public abstract void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players);
 
     public String replace(String parameter) {
         for (String prefix : prefixes) {
@@ -70,9 +72,10 @@ public abstract class Action implements Service {
      * @param plugin instance
      * @param player to check
      * @param parameter to check
+     * @param replacer to check
      * @return execute value
      */
-    public boolean canExecute(BukkitMeteorPlugin plugin, Player player, String parameter) {
+    public boolean canExecute(BukkitMeteorPlugin plugin, Player player, String parameter, TextReplacer replacer) {
         return true;
     }
 
@@ -81,9 +84,10 @@ public abstract class Action implements Service {
      * @param plugin instance
      * @param parameter used
      * @param player of this check
+     * @param replacer of this check
      * @return result
      */
-    public boolean isStoppingUpcomingActions(BukkitMeteorPlugin plugin, String parameter, Player player) {
+    public boolean isStoppingUpcomingActions(BukkitMeteorPlugin plugin, String parameter, Player player, TextReplacer replacer) {
         if (stop) {
             stop = false;
             return true;

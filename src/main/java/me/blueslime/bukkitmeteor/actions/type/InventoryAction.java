@@ -5,6 +5,7 @@ import me.blueslime.bukkitmeteor.actions.action.Action;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.inventory.Inventories;
 import me.blueslime.bukkitmeteor.inventory.inventory.MeteorInventory;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -24,7 +25,8 @@ public class InventoryAction extends Action {
      * @param players   players
      */
     @Override
-    public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players) {
+        parameter = replacer.apply(parameter);
         String id = replace(parameter.toLowerCase(Locale.ENGLISH));
         Inventories menus = Implements.fetch(Inventories.class);
         MeteorInventory inventory = menus.getSpecifiedInventory(id);

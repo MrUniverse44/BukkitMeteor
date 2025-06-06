@@ -3,6 +3,7 @@ package me.blueslime.bukkitmeteor.actions.type;
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
 import me.blueslime.messagehandler.types.messages.MessageHandler;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import me.clip.placeholderapi.PlaceholderAPI;
 import org.bukkit.entity.Player;
 
@@ -23,10 +24,12 @@ public class MessageAction extends Action {
      * @param players   players
      */
     @Override
-    public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players) {
         if (players == null || players.isEmpty()) {
             return;
         }
+
+        parameter = replacer.apply(parameter);
 
         boolean placeholders = plugin.getServer().getPluginManager().isPluginEnabled("PlaceholderAPI");
 

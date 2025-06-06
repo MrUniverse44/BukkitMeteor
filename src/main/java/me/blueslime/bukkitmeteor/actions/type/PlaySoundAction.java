@@ -2,6 +2,7 @@ package me.blueslime.bukkitmeteor.actions.type;
 
 import me.blueslime.bukkitmeteor.BukkitMeteorPlugin;
 import me.blueslime.bukkitmeteor.actions.action.Action;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
@@ -21,8 +22,10 @@ public class PlaySoundAction extends Action {
      * @param players   players
      */
     @Override
-    public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players) {
         try {
+            parameter = replacer.apply(parameter);
+
             String[] arguments = replace(parameter.replace(" ", "")).split(",");
 
             if (arguments.length == 1) {

@@ -5,6 +5,7 @@ import me.blueslime.bukkitmeteor.actions.action.Action;
 import me.blueslime.bukkitmeteor.implementation.Implements;
 import me.blueslime.bukkitmeteor.menus.Menus;
 import me.blueslime.bukkitmeteor.menus.list.PersonalMenu;
+import me.blueslime.utilitiesapi.text.TextReplacer;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -23,7 +24,8 @@ public class MenuAction extends Action {
      * @param players   players
      */
     @Override
-    public void execute(BukkitMeteorPlugin plugin, String parameter, List<Player> players) {
+    public void execute(BukkitMeteorPlugin plugin, String parameter, TextReplacer replacer, List<Player> players) {
+        parameter = replacer.apply(parameter);
         String id = replace(parameter);
         String[] split = id.replace(" ", "").split(",");
 
