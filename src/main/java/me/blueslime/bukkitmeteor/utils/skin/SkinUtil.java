@@ -1,7 +1,5 @@
 package me.blueslime.bukkitmeteor.utils.skin;
 
-
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -25,7 +23,6 @@ import org.bukkit.plugin.Plugin;
 
 public class SkinUtil {
 
-    private static final Gson gson = new Gson();
     private static final Map<UUID, BufferedImage> headCache = new ConcurrentHashMap<>();
     private static final Map<UUID, CompletableFuture<BufferedImage>> pendingRequests = new ConcurrentHashMap<>();
     private static final JsonParser jsonParser = new JsonParser();
@@ -150,7 +147,7 @@ public class SkinUtil {
             StringBuilder line = new StringBuilder();
             for (int x = 0; x < 8; x++) {
                 Color c = new Color(image.getRGB(x, y), true);
-                line.append(String.format("&#%02x%02x%02x", c.getRed(), c.getGreen(), c.getBlue()));
+                line.append(String.format("&#%02x%02x%02x█", c.getRed(), c.getGreen(), c.getBlue()));
             }
             replacer = replacer.replace("<player-head-" + y + ">", line.toString());
         }
