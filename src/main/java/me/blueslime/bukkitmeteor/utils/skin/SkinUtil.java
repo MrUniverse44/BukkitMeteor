@@ -12,9 +12,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.Base64;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.imageio.ImageIO;
@@ -49,6 +47,7 @@ public class SkinUtil {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     public static CompletableFuture<BufferedImage> getPlayerHeadAsync(Player player, Plugin plugin) {
         UUID uuid = player.getUniqueId();
+        String name = player.getName();
 
         BufferedImage cached = headCache.get(uuid);
         if (cached != null) {
@@ -79,23 +78,53 @@ public class SkinUtil {
                     }
                 }
 
-                String url = "https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString().replace("-", "");
-                InputStream inputStream = new URL(url).openStream();
-                JsonObject profile = jsonParser.parse(new InputStreamReader(inputStream)).getAsJsonObject();
+                // Lista de URLs a intentar en orden de preferencia
+                List<String> headApiUrls = Arrays.asList(
+                    "https://minotar.net/avatar/" + name + "/8.png", // Minotar API
+                    "https://api.ashcon.app/mojang/v2/user/" + uuid.toString(), // Ashcon API
+                    "https://crafatar.com/renders/head/" + uuid.toString() + "?scale=8", // Crafatar API
+                    "https://visage.surgeplay.com/head/8/" + uuid.toString() + ".png", // Visage API
+                    "https://sessionserver.mojang.com/session/minecraft/profile/" + uuid.toString().replace("-", "") // Mojang original como último recurso
+                );
 
-                JsonArray properties = profile.getAsJsonArray("properties");
-                JsonObject property = properties.get(0).getAsJsonObject();
-                String value = property.get("value").getAsString();
+                BufferedImage head = null;
+                for (String currentUrl : headApiUrls) {
+                    try {
+                        if (currentUrl.contains("ashcon.app") || currentUrl.contains("sessionserver.mojang.com")) {
+                            // Lógica para APIs que devuelven JSON (Ashcon o Mojang original)
+                            InputStream inputStream = new URL(currentUrl).openStream();
+                            JsonObject profile = jsonParser.parse(new InputStreamReader(inputStream)).getAsJsonObject();
 
-                String decoded = new String(Base64.getDecoder().decode(value));
-                JsonObject decodedJson = jsonParser.parse(decoded).getAsJsonObject();
-                String skinUrl = decodedJson.getAsJsonObject("textures")
-                        .getAsJsonObject("SKIN")
-                        .get("url")
-                        .getAsString();
+                            // Lógica para extraer la URL del skin del JSON (similar a tu código actual)
+                            JsonArray properties = profile.getAsJsonArray("properties");
+                            JsonObject property = properties.get(0).getAsJsonObject();
+                            String value = property.get("value").getAsString();
+                            String decoded = new String(Base64.getDecoder().decode(value));
+                            JsonObject decodedJson = jsonParser.parse(decoded).getAsJsonObject();
+                            String skinUrl = decodedJson.getAsJsonObject("textures")
+                                .getAsJsonObject("SKIN")
+                                .get("url")
+                                .getAsString();
 
-                BufferedImage fullSkin = ImageIO.read(new URL(skinUrl));
-                BufferedImage head = fullSkin.getSubimage(8, 8, 8, 8);
+                            BufferedImage fullSkin = ImageIO.read(new URL(skinUrl));
+                            head = fullSkin.getSubimage(8, 8, 8, 8);
+                        } else {
+                            head = ImageIO.read(new URL(currentUrl));
+                        }
+
+                        if (head != null) {
+                            // Si se obtuvo la cabeza, salir del bucle
+                            break;
+                        }
+                    } catch (Exception e) {
+                        // Manejar la excepción (ej. imprimir un mensaje de error para esta URL específica)
+                        plugin.getLogger().warning("Failed to fetch head from " + currentUrl + " for " + uuid + ": " + e.getMessage());
+                    }
+                }
+
+                if (head == null) {
+                    throw new RuntimeException("Can't fetch minecraft skull from any available API for player " + uuid);
+                }
 
                 try {
                     ImageIO.write(head, "PNG", pngFile);
