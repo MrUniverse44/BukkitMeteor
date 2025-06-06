@@ -38,7 +38,10 @@ public class Actions implements AdvancedModule {
             new PlaySoundAction(),
             new MenuAction(),
             new RemoveBossBar(),
-            new BossBarAction()
+            new BossBarAction(),
+            new LogDebugAction(),
+            new LogErrorAction(),
+            new LogInfoAction()
         );
 
         Implements.register(this);
@@ -85,7 +88,7 @@ public class Actions implements AdvancedModule {
 
         if (
             actions.stream()
-                .anyMatch(line -> line.contains("<player-head-"))
+                .anyMatch(line -> line.toLowerCase(Locale.ENGLISH).contains("<player-head"))
         ) {
             SkinUtil.getPlayerHeadAsync(player).thenAcceptAsync(
                 head -> new BukkitRunnable() {
@@ -104,6 +107,34 @@ public class Actions implements AdvancedModule {
                 }.runTask(fetch(BukkitMeteorPlugin.class))
             ).exceptionally(
                 ex -> {
+                    getLogs().error(ex, "Can't fetch player head");
+                    replacer.replace(
+                        "<player-head-0>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-1>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-2>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-3>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-4>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-5>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-6>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-7>", ""
+                    );
+                    replacer.replace(
+                        "<player-head-8>", ""
+                    );
                     new BukkitRunnable() {
                         @Override
                         public void run() {
@@ -135,7 +166,7 @@ public class Actions implements AdvancedModule {
 
         executor.submit(() -> {
             if (
-                actions.stream().anyMatch(line -> line.contains("<player-head-"))
+                actions.stream().anyMatch(line -> line.contains("<player-head"))
             ) {
                 SkinUtil.getPlayerHeadAsync(player).thenAcceptAsync(
                     head -> new BukkitRunnable() {
